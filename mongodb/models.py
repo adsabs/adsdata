@@ -93,7 +93,13 @@ class DataCollection(mongodb.Document):
         if not source_file:
             source_file = cls.get_source_file()
         
-        fields = [x.db_field for x in cls.field_order]
+        def get_collection_field_name(field):
+            if field.is_id and cls.aggregated:
+                return "load_key"
+            else:
+                return field.db_field
+            
+        fields = [get_collection_field_name(x) for x in cls.field_order]
         try:
             fh = open(source_file, 'r')
         except IOError, e:
@@ -127,9 +133,8 @@ class DataCollection(mongodb.Document):
 
         cls.post_load_data(collection)
         
-        dlt = mongo.query(DataLoadTime).filter(DataLoadTime.collection == collection_name).first()
-        dlt.last_synced=datetime.now()
-        mongo.update(dlt)
+        dlt = DataLoadTime(collection=collection_name, last_synced=datetime.now())
+        mongo.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
         log.info("%s load time updated to %s" % (collection_name, str(dlt.last_synced)))
         
     @classmethod
@@ -166,7 +171,7 @@ class FulltextLink(DataCollection):
 
 class Readers(DataCollection):
     
-    bibcode = mongodb.StringField()
+    bibcode = mongodb.StringField(_id=True)
     readers = mongodb.SetField(mongodb.StringField())
     
     aggregated = True
@@ -179,11 +184,11 @@ class Readers(DataCollection):
     @classmethod
     def post_load_data(cls, source_collection):
         target_collection_name = cls.config_collection_name
-        map_reduce_listify(source_collection, target_collection_name, 'bibcode', 'readers')
+        map_reduce_listify(source_collection, target_collection_name, 'load_key', 'readers')
     
 class References(DataCollection):
     
-    bibcode = mongodb.StringField()
+    bibcode = mongodb.StringField(_id=True)
     references = mongodb.SetField(mongodb.StringField())
     
     aggregated = True
@@ -196,7 +201,7 @@ class References(DataCollection):
     @classmethod
     def post_load_data(cls, source_collection):
         target_collection_name = cls.config_collection_name
-        map_reduce_listify(source_collection, target_collection_name, 'bibcode', 'references')
+        map_reduce_listify(source_collection, target_collection_name, 'load_key', 'references')
     
 class Refereed(DataCollection):
 
