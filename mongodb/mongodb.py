@@ -9,6 +9,7 @@ from collections import defaultdict
 from hashlib import sha1
 from mongoalchemy.session import Session
 from mongoalchemy.document import Document
+from mongoalchemy.document import Index
 from mongoalchemy.fields import *
 
 mongo = None
