@@ -21,6 +21,7 @@ class DataConfig(object):
         'accnos': '/proj/ads/abstracts/config/bib2accno.dat',
         'docmetrics': '/proj/adsduo/abstracts/config/links/relevance/docmetrics.tab',
         'eprint_matches':'/proj/adsduo/abstracts/config/links/preprint/arxiv2pub.list',
+        'eprint_mapping':'/proj/ads/abstracts/config/links/preprint/arxiv.dat',
         }
     
     MONGO_DATA_LOAD_BATCH_SIZE = 100000
