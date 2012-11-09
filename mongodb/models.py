@@ -236,4 +236,13 @@ class Accno(DataCollection):
     def __str__(self):
         return "%s: %s" % (self.bibcode, self.accno)
     
-    
+class EprintMatches(DataCollection):
+
+    ecode = mongodb.StringField(_id=True)
+    bibcode = mongodb.StringField()
+
+    config_collection_name = 'eprint_matches'
+    field_order = [ecode,bibcode]
+
+    def __str__(self):
+        return "%s: %s" % (self.ecode, self.bibcode)
