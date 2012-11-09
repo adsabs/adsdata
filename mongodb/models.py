@@ -246,3 +246,14 @@ class EprintMatches(DataCollection):
 
     def __str__(self):
         return "%s: %s" % (self.ecode, self.bibcode)
+
+class EprintMapping(DataCollection):
+
+    arxivid = mongodb.StringField(_id=True)
+    bibcode = mongodb.StringField()
+
+    config_collection_name = 'eprint_mapping'
+    field_order = [bibcode,arxivid]
+
+    def __str__(self):
+        return "%s: %s" % (self.arxivid, self.bibcode)
