@@ -105,8 +105,13 @@ class DataCollection(mongodb.Document):
         except IOError, e:
             log.error(str(e))
             return
-        
-        reader = csv.DictReader(fh, fields, delimiter="\t", restkey='unwanted')
+
+        try:
+            restkey = cls.restkey
+        except:
+	        restkey = "unwanted"
+
+        reader = csv.DictReader(fh, fields, delimiter="\t", restkey=restkey)
         log.info("inserting records into %s..." % load_collection_name)
         
         batch = []
@@ -257,3 +262,16 @@ class EprintMapping(DataCollection):
 
     def __str__(self):
         return "%s: %s" % (self.arxivid, self.bibcode)
+
+class ADSReadsNumbers(DataCollection):
+
+    bibcode = mongodb.StringField(_id=True)
+    reads   = mongodb.ListField(mongodb.StringField())
+
+    restkey = 'reads'
+
+    config_collection_name = 'ads_reads_numbers'
+    field_order = [bibcode]
+
+    def __str__(self):
+        return self.bibcode
