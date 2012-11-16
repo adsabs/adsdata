@@ -22,6 +22,7 @@ class DataConfig(object):
         'docmetrics': '/proj/adsduo/abstracts/config/links/relevance/docmetrics.tab',
         'eprint_matches':'/proj/adsduo/abstracts/config/links/preprint/arxiv2pub.list',
         'eprint_mapping':'/proj/ads/abstracts/config/links/preprint/arxiv.dat',
+        'ads_reads_numbers':'/proj/ads/abstracts/config/links/reads/all.links',
         }
     
     MONGO_DATA_LOAD_BATCH_SIZE = 100000
