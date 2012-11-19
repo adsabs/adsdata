@@ -275,3 +275,16 @@ class ADSReadsNumbers(DataCollection):
 
     def __str__(self):
         return self.bibcode
+        
+class ADSDownloadsNumbers(DataCollection):
+
+    bibcode = mongodb.StringField(_id=True)
+    downloads = mongodb.ListField(mongodb.StringField())
+
+    restkey = 'downloads'
+
+    config_collection_name = 'ads_downloads_numbers'
+    field_order = [bibcode]
+
+    def __str__(self):
+        return self.bibcode
