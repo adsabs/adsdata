@@ -109,7 +109,7 @@ class DataCollection(mongodb.Document):
         try:
             restkey = cls.restkey
         except:
-	        restkey = "unwanted"
+            restkey = "unwanted"
 
         reader = csv.DictReader(fh, fields, delimiter="\t", restkey=restkey)
         log.info("inserting records into %s..." % load_collection_name)
