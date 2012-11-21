@@ -18,6 +18,7 @@ class DataConfig(object):
         'refereed': '/proj/ads/abstracts/config/links/refereed/all.links',
         'readers': '/proj/ads/abstracts/config/links/alsoread_bib/all.links',
         'references': '/proj/ads_abstracts/config/links/reference/all.links',
+        'citations': '/proj/ads_abstracts/config/links/citation/all.links',
         'accnos': '/proj/ads/abstracts/config/bib2accno.dat',
         'docmetrics': '/proj/adsduo/abstracts/config/links/relevance/docmetrics.tab',
         'eprint_matches':'/proj/adsduo/abstracts/config/links/preprint/arxiv2pub.list',
