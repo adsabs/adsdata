@@ -207,6 +207,23 @@ class References(DataCollection):
     def post_load_data(cls, source_collection):
         target_collection_name = cls.config_collection_name
         map_reduce_listify(source_collection, target_collection_name, 'load_key', 'references')
+
+class Citations(DataCollection):
+    
+    bibcode = mongodb.StringField(_id=True)
+    citations = mongodb.SetField(mongodb.StringField())
+    
+    aggregated = True
+    config_collection_name = 'citations'
+    field_order = [bibcode, citations]
+    
+    def __str__(self):
+        return "%s: [%s]" % (self.bibcode, self.citations)
+    
+    @classmethod
+    def post_load_data(cls, source_collection):
+        target_collection_name = cls.config_collection_name
+        map_reduce_listify(source_collection, target_collection_name, 'load_key', 'citations')
     
 class Refereed(DataCollection):
 
