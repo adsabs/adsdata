@@ -5,6 +5,9 @@ Created on Oct 25, 2012
 '''
 
 import os
+import site
+site.addsitedir(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) #@UndefinedVariable
+
 import tempfile
 from stat import *
 from time import sleep
