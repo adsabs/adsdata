@@ -29,6 +29,7 @@ class DataCollection(mongodb.Document):
     
     field_order = []
     aggregated = False
+    restkey = "unwanted"
     
     @classmethod
     def last_synced(cls):
@@ -70,7 +71,7 @@ class DataCollection(mongodb.Document):
     def get_source_file(cls):
         collection_name = cls.config_collection_name
         try:
-            return config.MONGO_COLLECTIONS[collection_name]
+            return config.MONGO_DATA_COLLECTIONS[collection_name]
         except:
             raise exc.ConfigurationError("No source file configured for %s" % collection_name)
         
@@ -106,12 +107,7 @@ class DataCollection(mongodb.Document):
             log.error(str(e))
             return
 
-        try:
-            restkey = cls.restkey
-        except:
-            restkey = "unwanted"
-
-        reader = csv.DictReader(fh, fields, delimiter="\t", restkey=restkey)
+        reader = csv.DictReader(fh, fields, delimiter="\t", restkey=cls.restkey)
         log.info("inserting records into %s..." % load_collection_name)
         
         batch = []
@@ -287,7 +283,7 @@ class ADSReadsNumbers(DataCollection):
 
     restkey = 'reads'
 
-    config_collection_name = 'ads_reads_numbers'
+    config_collection_name = 'reads'
     field_order = [bibcode]
 
     def __str__(self):
@@ -300,8 +296,21 @@ class ADSDownloadsNumbers(DataCollection):
 
     restkey = 'downloads'
 
-    config_collection_name = 'ads_downloads_numbers'
+    config_collection_name = 'downloads'
     field_order = [bibcode]
 
     def __str__(self):
         return self.bibcode
+    
+class Grants(DataCollection):
+    
+    bibcode = mongodb.StringField(_id=True)
+    agency = mongodb.StringField()
+    grant = mongodb.StringField()
+    
+    config_collection_name = "grants"
+    field_order = [bibcode,agency,grant]
+    
+    def __str__(self):
+        return "%s: %s, %s" % (self.bibcode, self.agency, self.grant)
+

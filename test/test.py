@@ -32,7 +32,8 @@ class BasicCollection(models.DataCollection):
     config_collection_name = 'adsdata_test'
     foo = mongodb.StringField(_id=True)
     bar = mongodb.StringField()
-    field_order = [foo, bar]
+    baz = mongodb.ListField(mongodb.StringField())
+    field_order = [foo, bar, baz]
             
 class AggregatedCollection(models.DataCollection):
     config_collection_name = 'adsdata_test'
@@ -55,16 +56,16 @@ class TestDataCollection(AdsdataTestCase):
     def test_last_modified(self):
         mongo = mongodb.get_mongo()
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_COLLECTIONS['adsdata_test'] = tmp.name
+        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         tmp_modified = datetime.fromtimestamp(os.stat(tmp.name)[ST_MTIME])
         last_modified = BasicCollection.last_modified()
-        del config.MONGO_COLLECTIONS['adsdata_test']
+        del config.MONGO_DATA_COLLECTIONS['adsdata_test']
         self.assertTrue(last_modified == tmp_modified, 'last_modfied() returns correct mod time')
         
     def test_needs_sync(self):
         mongo = mongodb.get_mongo()
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_COLLECTIONS['adsdata_test'] = tmp.name
+        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         self.assertTrue(BasicCollection.needs_sync(), 'No DLT == needs sync')
         
         sleep(1) 
@@ -80,19 +81,32 @@ class TestDataCollection(AdsdataTestCase):
     def test_load_data(self):
         mongo = mongodb.get_mongo()
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_COLLECTIONS['adsdata_test'] = tmp.name
-        for pair in zip("abcd","1234"):
-            print >>tmp, "%s\t%s" % pair
+        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
+        for triplet in zip("abcd","1234","wxyz"):
+            print >>tmp, "%s\t%s\t%s" % triplet
         tmp.flush()
         self.assertTrue(BasicCollection.last_synced() is None)
         BasicCollection.load_data()
         self.assertTrue(type(BasicCollection.last_synced()) == datetime, 'load data creates DLT entry')
         self.assertEqual(mongo.query(BasicCollection).count(), 4, 'all records loaded')
         
+    def test_restkey(self):
+        mongo = mongodb.get_mongo()
+        tmp = tempfile.NamedTemporaryFile()
+        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
+        for triplet in zip("abcd","1234","wxyz"):
+            print >>tmp, "%s\t%s\t%s" % triplet
+        tmp.flush()
+        BasicCollection.field_order = [BasicCollection.foo, BasicCollection.bar]
+        BasicCollection.restkey = "baz"
+        BasicCollection.load_data(source_file=tmp.name)
+        entry_a = mongo.query(BasicCollection).filter(BasicCollection.foo == 'a').first()
+        self.assertEqual(entry_a.baz, ["w"])
+        
     def test_load_data_aggregated(self):
         mongo = mongodb.get_mongo()
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_COLLECTIONS['adsdata_test'] = tmp.name
+        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         for pair in zip("aabbccdd","12345678"):
             print >>tmp, "%s\t%s" % pair
         tmp.flush()
