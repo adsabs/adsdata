@@ -28,6 +28,12 @@ class DataConfig(object):
         }
     
     MONGO_DATA_LOAD_BATCH_SIZE = 100000
+   
+    # aggregate specific data into a single collection
+    DOCS_COLLECTION = "docs"
+    DOCS_CONTENT = ['refereed','readers','grants','reads','downloads']
+    # store dbrefs to these things ("collection.field")
+    DOCS_CONTENT_REFS = ['fulltext.fulltext']    
     
 try:
     from local_config import LocalConfig
