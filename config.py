@@ -30,6 +30,7 @@ class DataConfig(object):
     
     MONGO_DATA_LOAD_BATCH_SIZE = 100000
 
+    
 try:
     from local_config import LocalConfig
 except ImportError:
