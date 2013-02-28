@@ -12,7 +12,7 @@ class DataConfig(object):
     MONGO_PORT = 27017
     MONGO_SAFE = True
     
-    MONGO_COLLECTIONS = {
+    MONGO_DATA_COLLECTIONS = {
         'bibstems': '/proj/ads/abstracts/config/bibstems.dat',
         'fulltext_links': '/proj/ads/abstracts/config/links/fulltext/all.links',
         'refereed': '/proj/ads/abstracts/config/links/refereed/all.links',
@@ -23,12 +23,13 @@ class DataConfig(object):
         'docmetrics': '/proj/adsduo/abstracts/config/links/relevance/docmetrics.tab',
         'eprint_matches':'/proj/adsduo/abstracts/config/links/preprint/arxiv2pub.list',
         'eprint_mapping':'/proj/ads/abstracts/config/links/preprint/arxiv.dat',
-        'ads_reads_numbers':'/proj/ads/abstracts/config/links/reads/all.links',
-        'ads_downloads_numbers':'/proj/ads/abstracts/config/links/reads/downloads.links',
+        'reads':'/proj/ads/abstracts/config/links/reads/all.links',
+        'downloads':'/proj/ads/abstracts/config/links/reads/downloads.links',
+        'grants':'/proj/ads/abstracts/config/links/grants/all.links'
         }
     
     MONGO_DATA_LOAD_BATCH_SIZE = 100000
-    
+     
 try:
     from local_config import LocalConfig
 except ImportError:
