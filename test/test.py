@@ -5,6 +5,7 @@ Created on Oct 25, 2012
 '''
 
 import os
+import sys
 import site
 site.addsitedir(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) #@UndefinedVariable
 
@@ -12,40 +13,40 @@ import tempfile
 from stat import *
 from time import sleep
 from unittest import TestCase, main
-from datetime import datetime
+from datetime import datetime, timedelta
+from mongoalchemy import fields
 
 from config import config
-from mongodb import mongodb,models,utils
+from adsdata import session, models, utils
 
 class AdsdataTestCase(TestCase):
     
     def setUp(self):
         config.MONGO_DATABASE = 'test'
         config.MONGO_HOST = 'localhost'
-        mongo = mongodb.get_mongo()
+        mongo = session.get_mongo()
         mongo.db.connection.drop_database('test')
     
     def tearDown(self):
-        mongo = mongodb.get_mongo()
+        mongo = session.get_mongo()
     
 class BasicCollection(models.DataCollection):
     config_collection_name = 'adsdata_test'
-    foo = mongodb.StringField(_id=True)
-    bar = mongodb.StringField()
-    baz = mongodb.ListField(mongodb.StringField())
-    field_order = [foo, bar, baz]
+    foo = session.StringField(_id=True)
+    bar = session.StringField()
+    field_order = [foo, bar]
             
 class AggregatedCollection(models.DataCollection):
     config_collection_name = 'adsdata_test'
-    foo = mongodb.StringField(_id=True)
-    bar = mongodb.ListField(mongodb.StringField())
+    foo = fields.StringField(_id=True)
+    bar = fields.ListField(fields.StringField())
     aggregated = True
     field_order = [foo, bar]
     
 class TestDataCollection(AdsdataTestCase):
     
     def test_last_synced(self):
-        mongo = mongodb.get_mongo()
+        mongo = session.get_mongo()
         self.assertTrue(BasicCollection.last_synced() is None, 'No previous DLT == last_synced() is None')
         
         now = datetime(2000,1,1)
@@ -54,7 +55,7 @@ class TestDataCollection(AdsdataTestCase):
         self.assertTrue(BasicCollection.last_synced() == now, 'last_synced() returns correct DLT')
         
     def test_last_modified(self):
-        mongo = mongodb.get_mongo()
+        mongo = session.get_mongo()
         tmp = tempfile.NamedTemporaryFile()
         config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         tmp_modified = datetime.fromtimestamp(os.stat(tmp.name)[ST_MTIME])
@@ -63,7 +64,7 @@ class TestDataCollection(AdsdataTestCase):
         self.assertTrue(last_modified == tmp_modified, 'last_modfied() returns correct mod time')
         
     def test_needs_sync(self):
-        mongo = mongodb.get_mongo()
+        mongo = session.get_mongo()
         tmp = tempfile.NamedTemporaryFile()
         config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         self.assertTrue(BasicCollection.needs_sync(), 'No DLT == needs sync')
@@ -74,12 +75,12 @@ class TestDataCollection(AdsdataTestCase):
         mongo.insert(dlt)
         self.assertFalse(BasicCollection.needs_sync(), 'DLT sync time > file mod time == does not need sync')
         
-        dlt.last_synced = now.replace(day=now.day - 1)
+        dlt.last_synced = now - timedelta(days=1)
         mongo.update(dlt)
         self.assertTrue(BasicCollection.needs_sync(), 'DLT sync time < file mod time == needs sync')
         
     def test_load_data(self):
-        mongo = mongodb.get_mongo()
+        mongo = session.get_mongo()
         tmp = tempfile.NamedTemporaryFile()
         config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         for triplet in zip("abcd","1234","wxyz"):
@@ -91,7 +92,7 @@ class TestDataCollection(AdsdataTestCase):
         self.assertEqual(mongo.query(BasicCollection).count(), 4, 'all records loaded')
         
     def test_restkey(self):
-        mongo = mongodb.get_mongo()
+        mongo = session.get_mongo()
         tmp = tempfile.NamedTemporaryFile()
         config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         for triplet in zip("abcd","1234","wxyz"):
@@ -104,7 +105,7 @@ class TestDataCollection(AdsdataTestCase):
         self.assertEqual(entry_a.baz, ["w"])
         
     def test_load_data_aggregated(self):
-        mongo = mongodb.get_mongo()
+        mongo = session.get_mongo()
         tmp = tempfile.NamedTemporaryFile()
         config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         for pair in zip("aabbccdd","12345678"):

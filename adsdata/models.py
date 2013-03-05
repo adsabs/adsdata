@@ -4,36 +4,51 @@ Created on Sep 18, 2012
 @author: jluker
 '''
 import os
+import sys
 import csv
+import pytz
+import inspect
 from config import config
 from stat import ST_MTIME
 from datetime import datetime
 
-from . import mongodb
 import exceptions as exc
+from mongoalchemy import fields
+from mongoalchemy.document import Document, Index
 
-from .utils import map_reduce_listify
+from adsdata.session import get_session
+from adsdata.utils import map_reduce_listify
 
 import logging
 log = logging.getLogger(__name__)
-
     
-class DataLoadTime(mongodb.Document):
+def data_models():
+    for name, obj in inspect.getmembers(sys.modules[__name__]):
+        if inspect.isclass(obj) and DataCollection in obj.__bases__:
+            yield obj
+
+def doc_source_models():
+    for model in data_models():
+        if len(model.docs_fields):
+            yield model
+            
+class DataLoadTime(Document):
     
     config_collection_name = 'data_load_time'
     
-    collection = mongodb.StringField()
-    last_synced = mongodb.DateTimeField()
+    collection = fields.StringField()
+    last_synced = fields.DateTimeField()
     
-class DataCollection(mongodb.Document):
+class DataCollection(Document):
     
     field_order = []
     aggregated = False
     restkey = "unwanted"
+    docs_fields = []
     
     @classmethod
     def last_synced(cls):
-        mongo = mongodb.get_mongo()
+        mongo = get_session()
         collection_name = cls.config_collection_name
         dlt = mongo.query(DataLoadTime).filter(DataLoadTime.collection == collection_name).first()
         if not dlt:
@@ -46,7 +61,7 @@ class DataCollection(mongodb.Document):
         collection_name = cls.config_collection_name
         source_file = cls.get_source_file()
         log.info("checking freshness of %s collection vs %s" % (collection_name, source_file))
-        modified = datetime.fromtimestamp(os.stat(source_file)[ST_MTIME])
+        modified = datetime.fromtimestamp(os.stat(source_file)[ST_MTIME]).replace(tzinfo=pytz.utc)
         log.debug("%s last modified: %s" % (source_file, modified))
         return modified
         
@@ -80,14 +95,14 @@ class DataCollection(mongodb.Document):
         """
         batch load entries from a data file to the corresponding mongo collection
         """
-        mongo = mongodb.get_mongo() 
+        session = get_session() 
         
         collection_name = cls.config_collection_name
         if cls.aggregated:
             load_collection_name = collection_name + '_load'
         else:
             load_collection_name = collection_name
-        collection = mongo.db[load_collection_name]
+        collection = session.get_collection(load_collection_name)
         collection.drop()
         log.info("loading data into %s" % load_collection_name)
         
@@ -134,8 +149,8 @@ class DataCollection(mongodb.Document):
 
         cls.post_load_data(collection)
         
-        dlt = DataLoadTime(collection=collection_name, last_synced=datetime.now())
-        mongo.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
+        dlt = DataLoadTime(collection=collection_name, last_synced=datetime.utcnow().replace(tzinfo=pytz.utc))
+        session.session.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
         log.info("%s load time updated to %s" % (collection_name, str(dlt.last_synced)))
         
     @classmethod
@@ -147,10 +162,17 @@ class DataCollection(mongodb.Document):
         """
         pass
     
+    @classmethod
+    def add_docs_data(cls, doc, session, bibcode):
+        entry = session.query(cls).filter(cls.bibcode == bibcode).first()
+        for field in cls.docs_fields:
+            key = field.db_field
+            doc[key] = getattr(entry, key)
+    
 class Bibstem(DataCollection):
-    bibstem = mongodb.StringField()
-    type_code = mongodb.EnumField(mongodb.StringField(), "R", "J", "C")
-    journal_name = mongodb.StringField()
+    bibstem = fields.StringField()
+    type_code = fields.EnumField(fields.StringField(), "R", "J", "C")
+    journal_name = fields.StringField()
     
     config_collection_name = 'bibstems'
     field_order = [bibstem,type_code,journal_name]
@@ -159,10 +181,10 @@ class Bibstem(DataCollection):
         return "%s (%s): %s" % (self.bibstem, self.dunno, self.journal_name)
     
 class FulltextLink(DataCollection):
-    bibcode = mongodb.StringField(_id=True)
-    fulltext_source = mongodb.ListField(mongodb.StringField())
-    database = mongodb.SetField(mongodb.StringField())
-    provider = mongodb.StringField()
+    bibcode = fields.StringField(_id=True)
+    fulltext_source = fields.ListField(fields.StringField())
+    database = fields.SetField(fields.StringField())
+    provider = fields.StringField()
     
     config_collection_name = 'fulltext_links'
     field_order = [bibcode,fulltext_source,database,provider]
@@ -172,12 +194,13 @@ class FulltextLink(DataCollection):
 
 class Readers(DataCollection):
     
-    bibcode = mongodb.StringField(_id=True)
-    readers = mongodb.SetField(mongodb.StringField())
+    bibcode = fields.StringField(_id=True)
+    readers = fields.SetField(fields.StringField())
     
     aggregated = True
     config_collection_name = 'readers'
     field_order = [bibcode, readers]
+    docs_fields = [readers]
     
     def __str__(self):
         return "%s: [%s]" % (self.bibcode, self.readers)
@@ -189,8 +212,8 @@ class Readers(DataCollection):
     
 class References(DataCollection):
     
-    bibcode = mongodb.StringField(_id=True)
-    references = mongodb.SetField(mongodb.StringField())
+    bibcode = fields.StringField(_id=True)
+    references = fields.SetField(fields.StringField())
     
     aggregated = True
     config_collection_name = 'references'
@@ -206,8 +229,8 @@ class References(DataCollection):
 
 class Citations(DataCollection):
     
-    bibcode = mongodb.StringField(_id=True)
-    citations = mongodb.SetField(mongodb.StringField())
+    bibcode = fields.StringField(_id=True)
+    citations = fields.SetField(fields.StringField())
     
     aggregated = True
     config_collection_name = 'citations'
@@ -223,7 +246,7 @@ class Citations(DataCollection):
     
 class Refereed(DataCollection):
 
-    bibcode = mongodb.StringField(_id=True)
+    bibcode = fields.StringField(_id=True)
     
     config_collection_name = 'refereed'
     field_order = [bibcode]
@@ -232,21 +255,22 @@ class Refereed(DataCollection):
         return self.bibcode
     
 class DocMetrics(DataCollection):
-    bibcode = mongodb.StringField(_id=True)
-    boost = mongodb.FloatField()
-    citations = mongodb.IntField()
-    reads = mongodb.IntField()
+    bibcode = fields.StringField(_id=True)
+    boost = fields.FloatField()
+    citations = fields.IntField()
+    reads = fields.IntField()
     
     config_collection_name = 'docmetrics'
     field_order = [bibcode,boost,citations,reads]
+    docs_data = [boost, citations, reads]
     
     def __str__(self):
         return "%s: %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
     
 class Accno(DataCollection):
 
-    bibcode = mongodb.StringField(_id=True)
-    accno = mongodb.StringField()
+    bibcode = fields.StringField(_id=True)
+    accno = fields.StringField()
 
     config_collection_name = 'accnos'
     field_order = [bibcode,accno]
@@ -256,8 +280,8 @@ class Accno(DataCollection):
     
 class EprintMatches(DataCollection):
 
-    ecode = mongodb.StringField(_id=True)
-    bibcode = mongodb.StringField()
+    ecode = fields.StringField(_id=True)
+    bibcode = fields.StringField()
 
     config_collection_name = 'eprint_matches'
     field_order = [ecode,bibcode]
@@ -267,8 +291,8 @@ class EprintMatches(DataCollection):
 
 class EprintMapping(DataCollection):
 
-    arxivid = mongodb.StringField(_id=True)
-    bibcode = mongodb.StringField()
+    arxivid = fields.StringField(_id=True)
+    bibcode = fields.StringField()
 
     config_collection_name = 'eprint_mapping'
     field_order = [bibcode,arxivid]
@@ -276,28 +300,30 @@ class EprintMapping(DataCollection):
     def __str__(self):
         return "%s: %s" % (self.arxivid, self.bibcode)
 
-class ADSReadsNumbers(DataCollection):
+class Reads(DataCollection):
 
-    bibcode = mongodb.StringField(_id=True)
-    reads   = mongodb.ListField(mongodb.StringField())
+    bibcode = fields.StringField(_id=True)
+    reads   = fields.ListField(fields.StringField())
 
     restkey = 'reads'
 
     config_collection_name = 'reads'
     field_order = [bibcode]
+    docs_data = [reads]
 
     def __str__(self):
         return self.bibcode
         
-class ADSDownloadsNumbers(DataCollection):
+class Downloads(DataCollection):
 
-    bibcode = mongodb.StringField(_id=True)
-    downloads = mongodb.ListField(mongodb.StringField())
+    bibcode = fields.StringField(_id=True)
+    downloads = fields.ListField(fields.StringField())
 
     restkey = 'downloads'
 
     config_collection_name = 'downloads'
     field_order = [bibcode]
+    docs_data = [downloads]
 
     def __str__(self):
         return self.bibcode
