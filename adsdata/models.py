@@ -330,9 +330,9 @@ class Downloads(DataCollection):
     
 class Grants(DataCollection):
     
-    bibcode = mongodb.StringField(_id=True)
-    agency = mongodb.StringField()
-    grant = mongodb.StringField()
+    bibcode = fields.StringField(_id=True)
+    agency = fields.StringField()
+    grant = fields.StringField()
     
     config_collection_name = "grants"
     field_order = [bibcode,agency,grant]
