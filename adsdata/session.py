@@ -86,17 +86,21 @@ class DataSession(object):
                 
     def store_doc(self, collection_name, doc):
         
-        digest = utils.doc_digest(doc)
+        # note: bypassing mongoalchemy here
         collection = self.get_collection(collection_name)
+        
+        digest = utils.doc_digest(doc)
         spec = {'bibcode': doc['bibcode'], '_digest': digest}
+        
         # look for existing doc with the same digest value
         existing = collection.find_one(spec)
         if existing:
             # no change so do nothing.
             return
         
+        # save doc with the new digest value
+        # note: spec still contains old digest as a precaution against a
+        # race condition where we clobber the update from a diff process
         doc['_digest'] = digest
         return collection.update(spec, doc, manipulate=True, upsert=True)
-        
-        
             

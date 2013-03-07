@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from mongoalchemy import fields
 
 from config import config
-from adsdata import session, models, utils
+from adsdata import models, utils
 
 class AdsdataTestCase(TestCase):
     
@@ -168,6 +168,44 @@ class TestDataCollection(AdsdataTestCase):
             cls.coerce_types(rec)
             self.assertEqual(rec, expected)
         
+    def test_generate_doc(self):
+        pass
+    
+    def test_dt_manipulator(self):
+        from adsdata.session import DatetimeInjector
+        session = utils.get_session()
+        session.add_manipulator(DatetimeInjector())
+        collection = session.get_collection('ads_test')
+        collection.insert({"foo": 1})
+        entry = collection.find_one({"foo": 1}, manipulate=False)
+        self.assertTrue(entry.has_key('_dt'))
+        self.assertTrue(isinstance(entry['_dt'], datetime))
+        # let the manipulator remove the _dt
+        entry = collection.find_one({"foo": 1})
+        self.assertFalse(entry.has_key('_dt'))
+        
+        # make sure that no '_dt' values are preserved
+        dt = datetime.utcnow().replace(tzinfo=pytz.utc)
+        collection.insert({"foo": 1, '_dt': dt})
+        entry = collection.find_one({"foo": 1}, manipulate=False)
+        self.assertNotEqual(dt, entry['_dt'])
+        
+    def test_digest_manipulator(self):
+        from adsdata.session import DigestInjector
+        session = utils.get_session()
+        session.add_manipulator(DigestInjector())
+        collection = session.get_collection('ads_test')
+        collection.insert({"foo": 1})
+        entry = collection.find_one({"foo": 1}, manipulate=False)
+        self.assertTrue(entry.has_key('_digest'))
+        
+        digest = utils.doc_digest({"bar": 1})
+        collection.insert({"baz": 1, "_digest": digest})
+        entry = collection.find_one({"baz": 1}, manipulate=False)
+        self.assertEqual(entry['_digest'], digest)
+        
+    def test_store_doc(self):
+        pass
     
 if __name__ == '__main__':
     main()
