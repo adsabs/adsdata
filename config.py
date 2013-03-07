@@ -11,7 +11,10 @@ class DataConfig(object):
     MONGO_HOST = "localhost"
     MONGO_PORT = 27017
     MONGO_SAFE = True
+    MONGO_USER = None
+    MONGO_PASSWORD = None
     
+    MONGO_DOCS_COLLECTION = 'docs'
     MONGO_DATA_COLLECTIONS = {
         'bibstems': '/proj/ads/abstracts/config/bibstems.dat',
         'fulltext_links': '/proj/ads/abstracts/config/links/fulltext/all.links',
@@ -30,7 +33,6 @@ class DataConfig(object):
     
     MONGO_DATA_LOAD_BATCH_SIZE = 100000
 
-    
 try:
     from local_config import LocalConfig
 except ImportError:

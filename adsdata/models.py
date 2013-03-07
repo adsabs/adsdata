@@ -16,7 +16,6 @@ import exceptions as exc
 from mongoalchemy import fields
 from mongoalchemy.document import Document, Index
 
-from adsdata.session import get_session
 from adsdata.utils import map_reduce_listify
 
 import logging
@@ -47,10 +46,9 @@ class DataCollection(Document):
     docs_fields = []
     
     @classmethod
-    def last_synced(cls):
-        mongo = get_session()
+    def last_synced(cls, session):
         collection_name = cls.config_collection_name
-        dlt = mongo.query(DataLoadTime).filter(DataLoadTime.collection == collection_name).first()
+        dlt = session.query(DataLoadTime).filter(DataLoadTime.collection == collection_name).first()
         if not dlt:
             return None
         log.debug("%s last synced: %s" % (collection_name, dlt.last_synced))
@@ -66,14 +64,14 @@ class DataCollection(Document):
         return modified
         
     @classmethod
-    def needs_sync(cls):
+    def needs_sync(cls, session):
         """
         compare the modification time of a data source
         to its last_synced time in the data_load_time collection
         """
         collection_name = cls.config_collection_name
         last_modified = cls.last_modified()
-        last_synced = cls.last_synced()
+        last_synced = cls.last_synced(session)
         
         if not last_synced or last_modified > last_synced:
             log.info("%s needs updating" % collection_name)
@@ -91,11 +89,10 @@ class DataCollection(Document):
             raise exc.ConfigurationError("No source file configured for %s" % collection_name)
         
     @classmethod
-    def load_data(cls, batch_size=1000, source_file=None, partial=False):
+    def load_data(cls, session, batch_size=1000, source_file=None, partial=False):
         """
         batch load entries from a data file to the corresponding mongo collection
         """
-        session = get_session() 
         
         collection_name = cls.config_collection_name
         if cls.aggregated:
@@ -115,14 +112,14 @@ class DataCollection(Document):
             else:
                 return field.db_field
             
-        fields = [get_collection_field_name(x) for x in cls.field_order]
         try:
             fh = open(source_file, 'r')
         except IOError, e:
             log.error(str(e))
             return
 
-        reader = csv.DictReader(fh, fields, delimiter="\t", restkey=cls.restkey)
+        field_names = [get_collection_field_name(x) for x in cls.field_order]
+        reader = csv.DictReader(fh, field_names, delimiter="\t", restkey=cls.restkey)
         log.info("inserting records into %s..." % load_collection_name)
         
         batch = []
@@ -134,6 +131,7 @@ class DataCollection(Document):
                     del record['unwanted']
             except StopIteration:
                 break
+            cls.coerce_types(record)
             batch.append(record)
             if len(batch) >= batch_size:
                 log.info("inserting batch %d into %s" % (batch_num, load_collection_name))
@@ -147,11 +145,45 @@ class DataCollection(Document):
 
         log.info("done loading %d records into %s" % (collection.count(), load_collection_name))
 
-        cls.post_load_data(collection)
+        cls.post_load_data(session, collection)
         
         dlt = DataLoadTime(collection=collection_name, last_synced=datetime.utcnow().replace(tzinfo=pytz.utc))
-        session.session.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
+        session.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
         log.info("%s load time updated to %s" % (collection_name, str(dlt.last_synced)))
+        
+    @classmethod
+    def coerce_types(cls, record):
+        """
+        given a dict produced by the csv DictReader, will transorm the
+        any string values to int or float according to the types defined in the model
+        """
+        convert_types = [int, float]
+        
+        def get_constructor(field):
+            if hasattr(field, 'constructor'):
+                return field.constructor
+            else:
+                if hasattr(field, 'child_type'):
+                    item_type = model_field.child_type()
+                elif hasattr(field, 'item_type'):
+                    item_type = field.item_type
+                return item_type.constructor
+            return None
+                
+        for k, v in record.iteritems():
+            # assume id's are strings and we don't need to process
+            # (_id field is called "load_key" for aggregated collections
+            if k in ['_id','load_key']: 
+                continue
+            if not v: 
+                continue
+            model_field = cls.get_fields()[k]
+            constructor = get_constructor(model_field)
+            if constructor and constructor in convert_types:
+                if type(v) is list:
+                    record[k] = [constructor(x) for x in v]
+                else:
+                    record[k] = constructor(v)
         
     @classmethod
     def post_load_data(cls, *args, **kwargs):
@@ -165,9 +197,10 @@ class DataCollection(Document):
     @classmethod
     def add_docs_data(cls, doc, session, bibcode):
         entry = session.query(cls).filter(cls.bibcode == bibcode).first()
-        for field in cls.docs_fields:
-            key = field.db_field
-            doc[key] = getattr(entry, key)
+        if entry:
+            for field in cls.docs_fields:
+                key = field.db_field
+                doc[key] = getattr(entry, key)
     
 class Bibstem(DataCollection):
     bibstem = fields.StringField()
@@ -182,8 +215,8 @@ class Bibstem(DataCollection):
     
 class FulltextLink(DataCollection):
     bibcode = fields.StringField(_id=True)
-    fulltext_source = fields.ListField(fields.StringField())
-    database = fields.SetField(fields.StringField())
+    fulltext_source = fields.StringField()
+    database = fields.ListField(fields.StringField())
     provider = fields.StringField()
     
     config_collection_name = 'fulltext_links'
@@ -195,7 +228,7 @@ class FulltextLink(DataCollection):
 class Readers(DataCollection):
     
     bibcode = fields.StringField(_id=True)
-    readers = fields.SetField(fields.StringField())
+    readers = fields.ListField(fields.StringField())
     
     aggregated = True
     config_collection_name = 'readers'
@@ -206,14 +239,14 @@ class Readers(DataCollection):
         return "%s: [%s]" % (self.bibcode, self.readers)
     
     @classmethod
-    def post_load_data(cls, source_collection):
+    def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
-        map_reduce_listify(source_collection, target_collection_name, 'load_key', 'readers')
+        map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'readers')
     
 class References(DataCollection):
     
     bibcode = fields.StringField(_id=True)
-    references = fields.SetField(fields.StringField())
+    references = fields.ListField(fields.StringField())
     
     aggregated = True
     config_collection_name = 'references'
@@ -223,14 +256,14 @@ class References(DataCollection):
         return "%s: [%s]" % (self.bibcode, self.references)
     
     @classmethod
-    def post_load_data(cls, source_collection):
+    def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
-        map_reduce_listify(source_collection, target_collection_name, 'load_key', 'references')
+        map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'references')
 
 class Citations(DataCollection):
     
     bibcode = fields.StringField(_id=True)
-    citations = fields.SetField(fields.StringField())
+    citations = fields.ListField(fields.StringField())
     
     aggregated = True
     config_collection_name = 'citations'
@@ -240,9 +273,9 @@ class Citations(DataCollection):
         return "%s: [%s]" % (self.bibcode, self.citations)
     
     @classmethod
-    def post_load_data(cls, source_collection):
+    def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
-        map_reduce_listify(source_collection, target_collection_name, 'load_key', 'citations')
+        map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'citations')
     
 class Refereed(DataCollection):
 
@@ -250,7 +283,14 @@ class Refereed(DataCollection):
     
     config_collection_name = 'refereed'
     field_order = [bibcode]
+    docs_fields = [bibcode]
     
+    @classmethod
+    def add_docs_data(cls, doc, session, bibcode):
+        entry = session.query(cls).filter(cls.bibcode == bibcode).first()
+        if entry:
+            doc['refereed'] = True
+                
     def __str__(self):
         return self.bibcode
     
@@ -262,7 +302,7 @@ class DocMetrics(DataCollection):
     
     config_collection_name = 'docmetrics'
     field_order = [bibcode,boost,citations,reads]
-    docs_data = [boost, citations, reads]
+    docs_fields = [boost, citations, reads]
     
     def __str__(self):
         return "%s: %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
@@ -303,13 +343,13 @@ class EprintMapping(DataCollection):
 class Reads(DataCollection):
 
     bibcode = fields.StringField(_id=True)
-    reads   = fields.ListField(fields.StringField())
+    reads   = fields.ListField(fields.IntField())
 
     restkey = 'reads'
 
     config_collection_name = 'reads'
     field_order = [bibcode]
-    docs_data = [reads]
+    docs_fields = [reads]
 
     def __str__(self):
         return self.bibcode
@@ -317,13 +357,13 @@ class Reads(DataCollection):
 class Downloads(DataCollection):
 
     bibcode = fields.StringField(_id=True)
-    downloads = fields.ListField(fields.StringField())
+    downloads = fields.ListField(fields.IntField())
 
     restkey = 'downloads'
 
     config_collection_name = 'downloads'
     field_order = [bibcode]
-    docs_data = [downloads]
+    docs_fields = [downloads]
 
     def __str__(self):
         return self.bibcode
@@ -336,6 +376,7 @@ class Grants(DataCollection):
     
     config_collection_name = "grants"
     field_order = [bibcode,agency,grant]
+    docs_fields = [agency, grant]
     
     def __str__(self):
         return "%s: %s, %s" % (self.bibcode, self.agency, self.grant)

@@ -3,20 +3,22 @@ import os
 import site
 site.addsitedir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import sys
+import time
 import logging
-from datetime import datetime
 from optparse import OptionParser
 from multiprocessing import Pool, current_process, cpu_count
 
 from adsdata import models
-from adsdata.utils import init_logging
+from adsdata import utils
+from adsdata.session import DataSession
 from config import config
 
+    
 def load_data(model_class):
     log = logging.getLogger()
     log.debug("thread '%s' working on %s" % (current_process().name, model_class))
-    model_class.load_data(batch_size=config.MONGO_DATA_LOAD_BATCH_SIZE)
+    session = utils.get_session()
+    model_class.load_data(session, batch_size=config.MONGO_DATA_LOAD_BATCH_SIZE)
     
 def get_models(opts):
     for model_class in models.data_models():
@@ -32,9 +34,12 @@ def sync(opts):
     log = logging.getLogger()
     if opts.debug:
         log.setLevel(logging.DEBUG)
+        
+    session = utils.get_session()
+    
     updates = []
     for model_class in get_models(opts):
-        if model_class.needs_sync() or opts.force:
+        if model_class.needs_sync(session) or opts.force:
             updates.append(model_class)
         else:
             log.info("%s does not need syncing" % model_class.config_collection_name)
@@ -69,7 +74,7 @@ if __name__ == "__main__":
     opts, args = op.parse_args() 
     
     logfile = "%s/%s" % (config.LOG_DIR, os.path.basename(__file__))
-    log = init_logging(logfile, opts.verbose, opts.debug)
+    log = utils.init_logging(logfile, opts.verbose, opts.debug)
     
     try:
         cmd = args.pop()
@@ -77,5 +82,13 @@ if __name__ == "__main__":
     except (IndexError,AssertionError):
         op.error("missing or invalid command")
         
+    start_cpu = time.clock()
+    start_real = time.time()        
+    
     eval(cmd)(opts)
-
+    
+    end_cpu = time.clock()
+    end_real = time.time()
+    
+    print "Real Seconds: %f" % (end_real - start_real)
+    print "CPU Seconds: %f" % (end_cpu - start_cpu)
