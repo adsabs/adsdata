@@ -8,29 +8,30 @@ import sys
 import csv
 import pytz
 import inspect
-from config import config
+from bson import DBRef
 from stat import ST_MTIME
 from datetime import datetime
-
-import exceptions as exc
 from mongoalchemy import fields
 from mongoalchemy.document import Document, Index
 
+import exceptions as exc
+from config import config
 from adsdata.utils import map_reduce_listify
 
 import logging
 log = logging.getLogger(__name__)
     
-def data_models():
+def _get_models(cls):
     for name, obj in inspect.getmembers(sys.modules[__name__]):
-        if inspect.isclass(obj) and DataCollection in obj.__bases__:
+        if inspect.isclass(obj) and cls in obj.__bases__:
             yield obj
+    
+def data_file_models():
+    return _get_models(DataFileCollection)
 
 def doc_source_models():
-    for model in data_models():
-        if len(model.docs_fields):
-            yield model
-            
+    return _get_models(DocsDataCollection)
+        
 class DataLoadTime(Document):
     
     config_collection_name = 'data_load_time'
@@ -39,11 +40,45 @@ class DataLoadTime(Document):
     last_synced = fields.DateTimeField()
     
 class DataCollection(Document):
+    """
+    This super class exists only to make it easy to collect and operate
+    on all the various models via one base class
+    """
+    pass
+
+class DocsDataCollection(DataCollection):
+    
+    docs_fields = []
+    docs_ref_fields = []
+    
+    @classmethod
+    def add_docs_data(cls, doc, session, bibcode):
+        entry = session.query(cls).filter(cls.bibcode == bibcode).first()
+        if entry:
+            for field in cls.docs_fields:
+                key = field.db_field
+                doc[key] = getattr(entry, key)
+            for ref_field in cls.docs_ref_fields:
+                key = ref_field.db_field
+                doc[key] = DBRef(collection=cls.config_collection_name, id=bibcode)
+                
+class Fulltext(DocsDataCollection):
+    
+    bibcode = fields.StringField(_id=True)
+    full = fields.StringField()
+    ack = fields.StringField(default=None)
+    
+    config_collection_name = "fulltext"
+    docs_ref_fields = [full, ack]
+    
+    def __str__(self):
+        return "Fulltext(%s)" % self.bibcode
+    
+class DataFileCollection(DataCollection):
     
     field_order = []
     aggregated = False
     restkey = "unwanted"
-    docs_fields = []
     
     @classmethod
     def last_synced(cls, session):
@@ -194,15 +229,9 @@ class DataCollection(Document):
         """
         pass
     
-    @classmethod
-    def add_docs_data(cls, doc, session, bibcode):
-        entry = session.query(cls).filter(cls.bibcode == bibcode).first()
-        if entry:
-            for field in cls.docs_fields:
-                key = field.db_field
-                doc[key] = getattr(entry, key)
+
     
-class Bibstem(DataCollection):
+class Bibstem(DataFileCollection):
     bibstem = fields.StringField()
     type_code = fields.EnumField(fields.StringField(), "R", "J", "C")
     journal_name = fields.StringField()
@@ -211,9 +240,9 @@ class Bibstem(DataCollection):
     field_order = [bibstem,type_code,journal_name]
     
     def __str__(self):
-        return "%s (%s): %s" % (self.bibstem, self.dunno, self.journal_name)
+        return "Bibstem(%s): %s (%s)" % (self.bibstem, self.journal_name, self.type_code)
     
-class FulltextLink(DataCollection):
+class FulltextLink(DataFileCollection):
     bibcode = fields.StringField(_id=True)
     fulltext_source = fields.StringField()
     database = fields.ListField(fields.StringField())
@@ -223,9 +252,9 @@ class FulltextLink(DataCollection):
     field_order = [bibcode,fulltext_source,database,provider]
     
     def __str__(self):
-        return "%s: %s" % (self.bibcode, self.fulltext_source)
+        return "FulltextLink(%s): %s" % (self.bibcode, self.fulltext_source)
 
-class Readers(DataCollection):
+class Readers(DataFileCollection, DocsDataCollection):
     
     bibcode = fields.StringField(_id=True)
     readers = fields.ListField(fields.StringField())
@@ -236,14 +265,14 @@ class Readers(DataCollection):
     docs_fields = [readers]
     
     def __str__(self):
-        return "%s: [%s]" % (self.bibcode, self.readers)
+        return "Readers(%s): [%s]" % (self.bibcode, self.readers)
     
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
         map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'readers')
     
-class References(DataCollection):
+class References(DataFileCollection):
     
     bibcode = fields.StringField(_id=True)
     references = fields.ListField(fields.StringField())
@@ -253,14 +282,14 @@ class References(DataCollection):
     field_order = [bibcode, references]
     
     def __str__(self):
-        return "%s: [%s]" % (self.bibcode, self.references)
+        return "References(%s): [%s]" % (self.bibcode, self.references)
     
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
         map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'references')
 
-class Citations(DataCollection):
+class Citations(DataFileCollection):
     
     bibcode = fields.StringField(_id=True)
     citations = fields.ListField(fields.StringField())
@@ -270,14 +299,14 @@ class Citations(DataCollection):
     field_order = [bibcode, citations]
     
     def __str__(self):
-        return "%s: [%s]" % (self.bibcode, self.citations)
+        return "Citations(%s): [%s]" % (self.bibcode, self.citations)
     
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
         map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'citations')
     
-class Refereed(DataCollection):
+class Refereed(DataFileCollection, DocsDataCollection):
 
     bibcode = fields.StringField(_id=True)
     
@@ -292,9 +321,9 @@ class Refereed(DataCollection):
             doc['refereed'] = True
                 
     def __str__(self):
-        return self.bibcode
+        return "Refereed(%s)" % self.bibcode
     
-class DocMetrics(DataCollection):
+class DocMetrics(DataFileCollection, DocsDataCollection):
     bibcode = fields.StringField(_id=True)
     boost = fields.FloatField()
     citations = fields.IntField()
@@ -305,9 +334,9 @@ class DocMetrics(DataCollection):
     docs_fields = [boost, citations, reads]
     
     def __str__(self):
-        return "%s: %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
+        return "DocMetrics(%s): %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
     
-class Accno(DataCollection):
+class Accno(DataFileCollection):
 
     bibcode = fields.StringField(_id=True)
     accno = fields.StringField()
@@ -316,9 +345,9 @@ class Accno(DataCollection):
     field_order = [bibcode,accno]
 
     def __str__(self):
-        return "%s: %s" % (self.bibcode, self.accno)
+        return "Accno(%s): %s" % (self.bibcode, self.accno)
     
-class EprintMatches(DataCollection):
+class EprintMatches(DataFileCollection):
 
     ecode = fields.StringField(_id=True)
     bibcode = fields.StringField()
@@ -327,9 +356,9 @@ class EprintMatches(DataCollection):
     field_order = [ecode,bibcode]
 
     def __str__(self):
-        return "%s: %s" % (self.ecode, self.bibcode)
+        return "EprintMatches(%s): %s" % (self.ecode, self.bibcode)
 
-class EprintMapping(DataCollection):
+class EprintMapping(DataFileCollection):
 
     arxivid = fields.StringField(_id=True)
     bibcode = fields.StringField()
@@ -338,9 +367,9 @@ class EprintMapping(DataCollection):
     field_order = [bibcode,arxivid]
 
     def __str__(self):
-        return "%s: %s" % (self.arxivid, self.bibcode)
+        return "EprintMapping(%s): %s" % (self.arxivid, self.bibcode)
 
-class Reads(DataCollection):
+class Reads(DataFileCollection, DocsDataCollection):
 
     bibcode = fields.StringField(_id=True)
     reads   = fields.ListField(fields.IntField())
@@ -352,9 +381,9 @@ class Reads(DataCollection):
     docs_fields = [reads]
 
     def __str__(self):
-        return self.bibcode
+        return "Reads(%s)" % self.bibcode
         
-class Downloads(DataCollection):
+class Downloads(DataFileCollection, DocsDataCollection):
 
     bibcode = fields.StringField(_id=True)
     downloads = fields.ListField(fields.IntField())
@@ -366,9 +395,9 @@ class Downloads(DataCollection):
     docs_fields = [downloads]
 
     def __str__(self):
-        return self.bibcode
+        return "Downloads(%s)" % self.bibcode
     
-class Grants(DataCollection):
+class Grants(DataFileCollection, DocsDataCollection):
     
     bibcode = fields.StringField(_id=True)
     agency = fields.StringField()
@@ -379,5 +408,6 @@ class Grants(DataCollection):
     docs_fields = [agency, grant]
     
     def __str__(self):
-        return "%s: %s, %s" % (self.bibcode, self.agency, self.grant)
+        return "Grants(%s): %s, %s" % (self.bibcode, self.agency, self.grant)
+
 

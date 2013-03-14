@@ -15,6 +15,8 @@ class DataConfig(object):
     MONGO_PASSWORD = None
     
     MONGO_DOCS_COLLECTION = 'docs'
+    MONGO_DOCS_REF_FIELDS = [('fulltext','full'), ('fulltext','ack')]
+    
     MONGO_DATA_COLLECTIONS = {
         'bibstems': '/proj/ads/abstracts/config/bibstems.dat',
         'fulltext_links': '/proj/ads/abstracts/config/links/fulltext/all.links',

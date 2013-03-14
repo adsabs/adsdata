@@ -42,31 +42,18 @@ def mongo_uri(host, port, db=None, user=None, passwd=None):
         uri += "/%s" % db
     return uri
 
-def get_session():
+def get_session(**kwargs):
     from config import config
     from session import DataSession
     uri = mongo_uri(config.MONGO_HOST, config.MONGO_PORT, user=config.MONGO_USER, passwd=config.MONGO_PASSWORD)
-    return DataSession(config.MONGO_DATABASE, uri) 
+    return DataSession(config.MONGO_DATABASE, uri, 
+                       config.MONGO_DOCS_COLLECTION, 
+                       ref_fields=config.MONGO_DOCS_REF_FIELDS,
+                       **kwargs) 
 
 def has_stdin():
     return select.select([sys.stdin],[],[],0.0)[0] and True or False
 
-def doc_digest(doc, hashtype='sha1'):
-    """
-    generate a digest hash from a 'docs' dictionary
-    """
-    # remove any 'meta' values
-    digest_doc = doc.copy()
-    for k in digest_doc.keys():
-        if k.startswith('_'):
-            del digest_doc[k]
-            
-    h = hashlib.new(hashtype)
-    # sort_keys=True should make this deterministic?
-    json = simplejson.dumps(digest_doc, sort_keys=True)
-    h.update(json)
-    return h.hexdigest()
-    
 def map_reduce_listify(session, source, target_collection_name, key_field, value_field):
     from bson.code import Code
 

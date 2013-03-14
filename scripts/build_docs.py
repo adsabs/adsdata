@@ -19,7 +19,7 @@ from multiprocessing import Process, Queue, JoinableQueue, cpu_count
 
 from adsdata import utils
 from adsdata.session import DatetimeInjector
-from adsdata.models import Accno
+from adsdata import models
 from adsdata.exceptions import *
 from config import config
 
@@ -37,6 +37,7 @@ class Builder(Process):
             bibcode = self.task_queue.get()
             if bibcode is None:
                 log.info("Nothing left to build for worker %s" % self.name)
+                self.task_queue.task_done()
                 break
             log.info("Worker %s: working on %s" % (self.name, bibcode))
             try:
@@ -53,12 +54,10 @@ class Builder(Process):
 
 class Saver(Process):
     
-    def __init__(self, result_queue, collection_name):
+    def __init__(self, result_queue):
         Process.__init__(self)
         self.result_queue = result_queue
         self.session = utils.get_session()
-        self.collection_name = collection_name
-        self.session.add_manipulator(DatetimeInjector())
         
     def run(self):
         log = logging.getLogger()
@@ -69,8 +68,7 @@ class Saver(Process):
                 break
             log.info("Saver %s is working on %s" % (self.name, doc['bibcode']))
             try:
-                saved = self.session.store_doc(self.collection_name, doc)
-                log.info("saved: %s" % str(saved))
+                self.session.store_doc(doc)
             except:
                 raise
         
@@ -82,9 +80,14 @@ def get_bibcodes(opts):
         else:
             stream = open(opts.infile, 'r')
         bibcodes = itertools.imap(lambda x: x.strip(), stream)
-    else:
+    elif opts.source_model:
+        try:
+            source_model = eval('models.' + opts.source_model)
+            assert hasattr(source_model, 'class_name')
+        except AssertionError, e:
+            raise Exception("Invalid source_model value: %s" % e)
         session = utils.get_session()
-        bibcodes = itertools.imap(lambda x: x.bibcode, session.iterate(Accno))
+        bibcodes = itertools.imap(lambda x: x.bibcode, session.iterate(source_model))
         
     if opts.limit:
         bibcodes = itertools.islice(bibcodes, opts.limit)
@@ -93,11 +96,10 @@ def get_bibcodes(opts):
     
 def build_synchronous(opts):
     session = utils.get_session()
-    session.add_manipulator(DatetimeInjector())
     for bib in get_bibcodes(opts):
         doc = session.generate_doc(bib)
         if doc is not None:
-            saved = session.store_doc(opts.collection, doc)
+            saved = session.store_doc(doc)
             log.info("Saved: %s" % str(saved))
     return
         
@@ -112,7 +114,7 @@ def build(opts):
         b.start()
         
     log.info("Creating %d Saver processes" % opts.threads)
-    savers = [ Saver(results, opts.collection) for i in xrange(opts.threads)]
+    savers = [ Saver(results) for i in xrange(opts.threads)]
     for s in savers:
         s.start()
         
@@ -121,22 +123,25 @@ def build(opts):
         tasks.put(bib)
     
     # add some poison pills to the end of the queue
+    log.info("poisoning our task threads")
     for i in xrange(opts.threads):
         tasks.put(None)
     
+    # join the results queue. this should
     # block until all tasks in the task queue are completed
+    log.info("Joining the builder threads")
     tasks.join()
     
     # poison our saver threads
+    log.info("poisoning our result threads")
     for i in xrange(opts.threads):
         results.put(None)
     
-    while True:
-        try:
-            doc = results.get(True, 3)
-            log.info("Result: %s" % str(doc))
-        except QueueEmpty:
-            break
+    log.info("Joining the saver threads")
+    for s in savers:
+        s.join()
+        
+    log.info("All work complete")
 
 def status(opts):
     pass
@@ -147,8 +152,8 @@ if __name__ == "__main__":
     
     op = OptionParser()
     op.set_usage("usage: sync_mongo_data.py [options] [%s]" % '|'.join(commands))
-    op.add_option('-c', '--collection', dest="collection", action="store", default=config.MONGO_DOCS_COLLECTION)
     op.add_option('-i', '--infile', dest="infile", action="store")
+    op.add_option('-s', '--source_model', dest="source_model", action="store", default="Accno")
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=cpu_count() * 2)
     op.add_option('-l','--limit', dest="limit", action="store", type=int)
     op.add_option('-d','--debug', dest="debug", action="store_true", default=False)

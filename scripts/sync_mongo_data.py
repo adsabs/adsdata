@@ -21,7 +21,7 @@ def load_data(model_class):
     model_class.load_data(session, batch_size=config.MONGO_DATA_LOAD_BATCH_SIZE)
     
 def get_models(opts):
-    for model_class in models.data_models():
+    for model_class in models.data_file_models():
         if len(opts.collection) and model_class.config_collection_name not in opts.collection:
             log.debug("skipping %s" % model_class.config_collection_name)
             continue
