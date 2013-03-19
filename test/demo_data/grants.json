@@ -1,0 +1,14 @@
+{ "_id" : { "$oid" : "514336027824176fe2e65429" }, "agency" : "NASA", "bibcode" : "2001ASPC..226..205S", "grant" : "NAG58388" }
+{ "_id" : { "$oid" : "514336027824176fe2e65976" }, "agency" : "NSF-AST", "bibcode" : "2001NewA....6..307P", "grant" : "9501634" }
+{ "_id" : { "$oid" : "514336027824176fe2e66364" }, "agency" : "NASA", "bibcode" : "2002GeoRL..29.1379S", "grant" : "NAG511350" }
+{ "_id" : { "$oid" : "514336027824176fe2e67860" }, "agency" : "NASA", "bibcode" : "2004AdSpR..33..100F", "grant" : "NAG59607" }
+{ "_id" : { "$oid" : "514336027824176fe2e6869f" }, "agency" : "NASA", "bibcode" : "2004PhRvE..70b6310B", "grant" : "NAG510569" }
+{ "_id" : { "$oid" : "514336027824176fe2e68e92" }, "agency" : "NASA", "bibcode" : "2005ApJ...629..341K", "grant" : "NAG510780" }
+{ "_id" : { "$oid" : "514336037824176fe2e6a718" }, "agency" : "NASA", "bibcode" : "2006JCrGr.286..146H", "grant" : "NAG81682" }
+{ "_id" : { "$oid" : "514336037824176fe2e6b223" }, "agency" : "NSF-AST", "bibcode" : "2007ApJ...664..411P", "grant" : "0352953" }
+{ "_id" : { "$oid" : "514336037824176fe2e6b77b" }, "agency" : "NSF-AST", "bibcode" : "2007IAUS..235..149Z", "grant" : "0507140" }
+{ "_id" : { "$oid" : "514336037824176fe2e6bef8" }, "agency" : "NSF-AST", "bibcode" : "2008ApJ...672..320C", "grant" : "0507219" }
+{ "_id" : { "$oid" : "514336037824176fe2e6c381" }, "agency" : "NSF-AST", "bibcode" : "2008ApJ...686L..83B", "grant" : "0205790" }
+{ "_id" : { "$oid" : "514336037824176fe2e6ea43" }, "agency" : "NASA-GSFC", "bibcode" : "2010ApJ...725.2209L", "grant" : "NNX09AT66G" }
+{ "_id" : { "$oid" : "514336037824176fe2e6f73b" }, "agency" : "NASA-HQ", "bibcode" : "2011AJ....142...62H", "grant" : "NNX09AF08G" }
+{ "_id" : { "$oid" : "514336037824176fe2e6fbb4" }, "agency" : "NASA", "bibcode" : "2011ApJ...734L...1M", "grant" : "NNA04CC08A" }

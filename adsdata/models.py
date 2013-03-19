@@ -16,7 +16,7 @@ from mongoalchemy.document import Document, Index
 
 import exceptions as exc
 from config import config
-from adsdata.utils import map_reduce_listify
+from adsdata import utils
 
 import logging
 log = logging.getLogger(__name__)
@@ -155,7 +155,20 @@ class DataFileCollection(DataCollection):
 
         field_names = [get_collection_field_name(x) for x in cls.field_order]
         reader = csv.DictReader(fh, field_names, delimiter="\t", restkey=cls.restkey)
-        log.info("inserting records into %s..." % load_collection_name)
+        
+        cls.insert_records(reader, collection, batch_size)
+        
+        log.info("done loading %d records into %s" % (collection.count(), load_collection_name))
+
+        cls.post_load_data(session, collection)
+        
+        dlt = DataLoadTime(collection=collection_name, last_synced=datetime.utcnow().replace(tzinfo=pytz.utc))
+        session.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
+        log.info("%s load time updated to %s" % (collection_name, str(dlt.last_synced)))
+        
+    @classmethod
+    def insert_records(cls, reader, collection, batch_size):
+        log.info("inserting records into %s..." % collection.name)
         
         batch = []
         batch_num = 1
@@ -169,23 +182,15 @@ class DataFileCollection(DataCollection):
             cls.coerce_types(record)
             batch.append(record)
             if len(batch) >= batch_size:
-                log.info("inserting batch %d into %s" % (batch_num, load_collection_name))
+                log.info("inserting batch %d into %s" % (batch_num, collection.name))
                 collection.insert(batch, safe=True)
                 batch = []
                 batch_num += 1
 
         if len(batch):
-            log.info("inserting final batch into %s" % load_collection_name)
+            log.info("inserting final batch into %s" % collection.name)
             collection.insert(batch, safe=True)
 
-        log.info("done loading %d records into %s" % (collection.count(), load_collection_name))
-
-        cls.post_load_data(session, collection)
-        
-        dlt = DataLoadTime(collection=collection_name, last_synced=datetime.utcnow().replace(tzinfo=pytz.utc))
-        session.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
-        log.info("%s load time updated to %s" % (collection_name, str(dlt.last_synced)))
-        
     @classmethod
     def coerce_types(cls, record):
         """
@@ -270,7 +275,7 @@ class Readers(DataFileCollection, DocsDataCollection):
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
-        map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'readers')
+        utils.map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'readers')
     
 class References(DataFileCollection):
     
@@ -287,7 +292,7 @@ class References(DataFileCollection):
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
-        map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'references')
+        utils.map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'references')
 
 class Citations(DataFileCollection):
     
@@ -304,7 +309,7 @@ class Citations(DataFileCollection):
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
-        map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'citations')
+        utils.map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'citations')
     
 class Refereed(DataFileCollection, DocsDataCollection):
 
@@ -403,9 +408,15 @@ class Grants(DataFileCollection, DocsDataCollection):
     agency = fields.StringField()
     grant = fields.StringField()
     
+    aggregated = True
     config_collection_name = "grants"
-    field_order = [bibcode,agency,grant]
+    field_order = [bibcode, agency, grant]
     docs_fields = [agency, grant]
+    
+    @classmethod
+    def post_load_data(cls, session, source_collection):
+        target_collection_name = cls.config_collection_name
+        utils.map_reduce_dictify(session, source_collection, target_collection_name, 'load_key', ['agency','grant'], 'grants')
     
     def __str__(self):
         return "Grants(%s): %s, %s" % (self.bibcode, self.agency, self.grant)

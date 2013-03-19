@@ -3,6 +3,10 @@ Created on Nov 26, 2012
 
 @author: jluker
 '''
-
+import sys
 import nose
-nose.main()
+
+config = nose.config.Config()
+config.addPaths = False
+
+nose.main(config=config)

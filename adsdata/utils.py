@@ -4,10 +4,9 @@ Created on Oct 11, 2012
 @author: jluker
 '''
 
+import os
 import sys
-import select
-import hashlib
-import simplejson
+from jinja2 import Template
 from datetime import datetime
 
 import logging
@@ -35,30 +34,29 @@ def init_logging(logfile, verbose=False, debug=False):
 
 def mongo_uri(host, port, db=None, user=None, passwd=None):
     if user and passwd:
-        uri = "mongodb://%s:%s@%s:%d" % (user, passwd, host, port)
+        uri = "mongodb://%s:%s@%s:%d/%s" % (user, passwd, host, port, db)
     else:
         uri = "mongodb://%s:%d" % (host, port)
-    if db:
-        uri += "/%s" % db
     return uri
 
 def get_session(**kwargs):
     from config import config
     from session import DataSession
-    uri = mongo_uri(config.MONGO_HOST, config.MONGO_PORT, user=config.MONGO_USER, passwd=config.MONGO_PASSWORD)
+    uri = mongo_uri(config.MONGO_HOST, config.MONGO_PORT, 
+                    db=config.MONGO_DATABASE, user=config.MONGO_USER, passwd=config.MONGO_PASSWORD)
     return DataSession(config.MONGO_DATABASE, uri, 
                        config.MONGO_DOCS_COLLECTION, 
-                       ref_fields=config.MONGO_DOCS_REF_FIELDS,
+                       ref_fields=config.MONGO_DOCS_DEREF_FIELDS,
                        **kwargs) 
 
-def has_stdin():
-    return select.select([sys.stdin],[],[],0.0)[0] and True or False
-
-def map_reduce_listify(session, source, target_collection_name, key_field, value_field):
+def map_reduce_listify(session, source, target_collection_name, group_key, value_field):
+    """
+    Will take a 1:many key:value collection and aggregate values in a list by unique key
+    """
     from bson.code import Code
 
     map_func = Code("function(){ " \
-                + "emit( this.%s, { '%s': [this.%s] } ); " % (key_field, value_field, value_field) \
+                + "emit( this.%s, { '%s': [this.%s] } ); " % (group_key, value_field, value_field) \
             + "};")
 
     reduce_func = Code("function( key , values ){ " \
@@ -76,4 +74,51 @@ def map_reduce_listify(session, source, target_collection_name, key_field, value
     target.update({}, {'$rename': {('value.' + value_field) : value_field}}, multi=True)
     target.update({}, {'$unset': { 'value': 1 }}, multi=True)
     source.drop()
+
+def map_reduce_dictify(session, source, target_collection_name, group_key, value_fields, output_key=None):
+    """
+    Will take a 1:many key:multiple-values collection and aggregate values in a list of dicts
+    by unique key
+    """
+    from bson.code import Code
+    if not output_key:
+        output_key = target_collection_name
     
+    emit_vals = ','.join(["'%s': this.%s" % (x,x) for x in value_fields])
+    map_func = Template("""
+        function() {
+            emit( this.{{ group_key }}, { '{{ output_key }}': [{ {{ emit_vals }} }] });
+        };
+    """).render(group_key=group_key, emit_vals=emit_vals, output_key=output_key)
+    
+    reduce_func = Template("""
+        function(key, values) {
+            var ret = { '{{ output_key }}': [] };
+            for ( var i = 0; i < values.length; i++ ) {
+                ret['{{ output_key }}'].push.apply(ret['{{ output_key }}'], values[i]['{{ output_key }}']);
+            }
+            return ret;
+        };
+    """).render(output_key=output_key)
+    
+    log.info("running map-reduce on %s" % source.name)
+    source.map_reduce(map_func, reduce_func, target_collection_name)
+    
+    target = session.get_collection(target_collection_name)
+    log.info("cleaning up target collection: %s" % target_collection_name)
+    target.update({}, {'$rename': {('value.' + output_key) : output_key}}, multi=True)
+    target.update({}, {'$unset': { 'value': 1 }}, multi=True)
+    source.drop()
+    
+def load_test_data(test_data_dir):
+    import subprocess
+    from config import config
+    for f in os.listdir(test_data_dir):
+        abs_path = os.path.join(test_data_dir, f)
+        collection_name = os.path.splitext(f)[0]
+        with open(os.devnull, "w") as fnull:
+            subprocess.call(["mongoimport", "--drop",
+                             "-d", "test", 
+                             "-c", collection_name, 
+                             "-h", "%s:%d" % (config.MONGO_HOST, config.MONGO_PORT),
+                             abs_path], stdout=fnull)   

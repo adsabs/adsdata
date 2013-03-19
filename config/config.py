@@ -11,11 +11,11 @@ class DataConfig(object):
     MONGO_HOST = "localhost"
     MONGO_PORT = 27017
     MONGO_SAFE = True
-    MONGO_USER = None
-    MONGO_PASSWORD = None
+    MONGO_USER = 'adsdata'
+    MONGO_PASSWORD = 'adsdata'
     
     MONGO_DOCS_COLLECTION = 'docs'
-    MONGO_DOCS_REF_FIELDS = [('fulltext','full'), ('fulltext','ack')]
+    MONGO_DOCS_DEREF_FIELDS = [('docs','full'), ('docs','ack')]
     
     MONGO_DATA_COLLECTIONS = {
         'bibstems': '/proj/ads/abstracts/config/bibstems.dat',

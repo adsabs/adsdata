@@ -11,15 +11,18 @@ site.addsitedir(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) #@U
 
 import pytz
 import tempfile
+import mongobox
 import unittest2
 import subprocess
 from stat import *
 from time import sleep
+from bson import DBRef
 from datetime import datetime, timedelta
 from mongoalchemy import fields
 
 from config import config
-from adsdata import models, utils, session
+from adsdata import models, utils
+from adsdata.session import *
 
 class BasicCollection(models.DataFileCollection):
     config_collection_name = 'adsdata_test'
@@ -45,25 +48,23 @@ class AggregatedCollection(models.DataFileCollection):
 class AdsdataTestCase(unittest2.TestCase):
     
     def setUp(self):
+        self.box = mongobox.MongoBox(scripting=True)
+        self.box.start()
+        self.boxclient = self.box.client()
+        self.box.client()['test'].add_user('test','test')
         config.MONGO_DATABASE = 'test'
         config.MONGO_HOST = 'localhost'
+        config.MONGO_PORT = self.box.port
+        config.MONGO_USER = 'test'
+        config.MONGO_PASSWORD = 'test'
         self.session = utils.get_session()
-        self.session.drop_database('test')
         
     def load_test_data(self):
         test_data_dir = os.path.join(os.path.dirname(__file__), 'demo_data')
-        for f in os.listdir(test_data_dir):
-            abs_path = os.path.join(test_data_dir, f)
-            collection_name = os.path.splitext(f)[0]
-            with open(os.devnull, "w") as fnull:
-                subprocess.call(["mongoimport", "--drop",
-                                 "-d", "test", 
-                                 "-c", collection_name, 
-                                 "-h", "%s:%d" % (config.MONGO_HOST, config.MONGO_PORT),
-                                 abs_path]) #, stdout=fnull)    
-                
+        utils.load_test_data(test_data_dir)
+        
     def tearDown(self):
-        self.session.drop_database('test')
+        self.box.stop()
     
 class TestDataCollection(AdsdataTestCase):
     
@@ -174,14 +175,76 @@ class TestDataCollection(AdsdataTestCase):
             cls.coerce_types(rec)
             self.assertEqual(rec, expected)
 
+    def test_mapreduce_listify(self):
+        source = self.session.get_collection("mapreduce_source")
+        source.insert({"foo": "a", "bar": "z"})
+        source.insert({"foo": "a", "bar": "y"})
+        source.insert({"foo": "b", "bar": "z"})
+        source.insert({"foo": "c", "bar": "z"})
+        source.insert({"foo": "c", "bar": "x"})
+        source.insert({"foo": "c", "bar": "w"})
+        target = self.session.get_collection("mapreduce_target")
+        utils.map_reduce_listify(self.session, source, target.name, "foo", "bar")
+        self.assertEqual(target.count(), 3)
+        self.assertEqual(target.find_one({"_id": "a"}), {"_id": "a", "bar": ["z","y"]})
+        
 class TestDocs(AdsdataTestCase):        
     
-    def test_generate_doc(self):
-        pass
+    def test_generate_docs(self):
+        self.load_test_data()
+        doc = self.session.generate_doc("1874MNRAS..34..279L")
+        self.assertEqual(doc, {'ack': DBRef('fulltext', '1874MNRAS..34..279L'),
+                               'bibcode': '1874MNRAS..34..279L',
+                               'boost': 0.16849827679273299,
+                               'citations': 0,
+                               'full': DBRef('fulltext', '1874MNRAS..34..279L'),
+                               'readers': [u'4f43e9286f', u'5108e7c0a8'],
+                               'reads': [0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 0, 1, 2, 0, 1, 0, 5, 3],
+                               'refereed': True})
+        doc = self.session.generate_doc("2011AJ....142...62H")
+        self.assertEqual(doc, {'ack': DBRef('fulltext', '2011AJ....142...62H'),
+                               'agency': u'NASA-HQ',
+                               'bibcode': '2011AJ....142...62H',
+                               'full': DBRef('fulltext', '2011AJ....142...62H'),
+                               'grant': u'NNX09AF08G',
+                               'readers': [u'430b0f6bd4', u'47d44dcaa9', u'48e27000f7', u'4cd02adfcc', u'4d46866c42', u'4d9b481763', u'4dce469f96', u'4f42520a18', u'4f63a3ac89', u'5039333cdb', u'504752fb6f', u'50844719d9', u'508fd5906b', u'50a267e8dd', u'50cf5b9972', u'50e4598eac', u'50e5930703', u'50ee1d6594', u'510ed9928c', u'51236f739c', u'51246644f5'],
+                               'refereed': True})
+        doc = self.session.generate_doc("1899Obs....22..253.")
+        self.assertEqual(doc, {'ack': DBRef('fulltext', '1899Obs....22..253.'),
+                               'bibcode': '1899Obs....22..253.',
+                               'boost': 0.115017967498934,
+                               'citations': 0,
+                               'full': DBRef('fulltext', '1899Obs....22..253.'),
+                               'reads': [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0],
+                               'refereed': True})
+        doc = self.session.generate_doc("1995MNRAS.274...31W")
+        self.assertEqual(doc, {'ack': DBRef('fulltext', '1995MNRAS.274...31W'),
+                               'bibcode': '1995MNRAS.274...31W',
+                               'full': DBRef('fulltext', '1995MNRAS.274...31W'),
+                               'readers': [u'4f01774d0a', u'50effcf0d8', u'510ac1772a', u'51234f16c0', u'512d897d95'],
+                               'refereed': True})
+        doc = self.session.generate_doc("2002JPhA...35.8109K")
+        self.assertEqual(doc, {'ack': DBRef('fulltext', '2002JPhA...35.8109K'),
+                               'bibcode': '2002JPhA...35.8109K',
+                               'full': DBRef('fulltext', '2002JPhA...35.8109K'),
+                               'readers': [u'X0cae078a6', u'X12049c5ae'],
+                               'refereed': True})
+        
+    def test_build_docs(self):
+        self.load_test_data()
+        self.session.store_doc(self.session.generate_doc("2004PhRvD..70d6004F"))
+        doc = self.session.get_doc("2004PhRvD..70d6004F", manipulate=False)
+        self.assertTrue(isinstance(doc['ack'], DBRef))
+        doc = self.session.get_doc("2004PhRvD..70d6004F")
+        self.assertFalse(isinstance(doc['ack'], DBRef))
+        self.assertEqual(doc['ack'], 'Lorem ipsum dolor sit amet, consecteteur adipiscing.')
+        
+        doc = self.session.generate_doc("2011AJ....142...62H")
+        self.assertEqual(doc['refereed'], True)
     
     def test_dt_manipulator(self):
         self.session = utils.get_session(inc_manipulators=False)
-        self.session.add_manipulator(session.DatetimeInjector('ads_test'))
+        self.session.add_manipulator(DatetimeInjector('ads_test'))
         collection = self.session.get_collection('ads_test')
         collection.insert({"foo": 1})
         entry = collection.find_one({"foo": 1}, manipulate=False)
@@ -190,7 +253,6 @@ class TestDocs(AdsdataTestCase):
         # let the manipulator remove the _dt
         entry = collection.find_one({"foo": 1})
         self.assertFalse(entry.has_key('_dt'))
-        
         # make sure that no '_dt' values are preserved
         dt = datetime.utcnow().replace(tzinfo=pytz.utc)
         collection.insert({"foo": 1, '_dt': dt})
@@ -199,25 +261,24 @@ class TestDocs(AdsdataTestCase):
         
     def test_digest_manipulator(self):
         self.session = utils.get_session(inc_manipulators=False)
-        self.session.add_manipulator(session.DigestInjector('ads_test'))
+        self.session.add_manipulator(DigestInjector('ads_test'))
         collection = self.session.get_collection('ads_test')
         collection.insert({"foo": 1})
         entry = collection.find_one({"foo": 1}, manipulate=False)
         self.assertTrue(entry.has_key('_digest'))
         
-        digest = session.doc_digest({"bar": 1}, self.session.db)
+        digest = doc_digest({"bar": 1}, self.session.db)
         collection.insert({"baz": 1, "_digest": digest})
         entry = collection.find_one({"baz": 1}, manipulate=False)
         self.assertEqual(entry['_digest'], digest)
         
     def test_dereference_manipulator(self):
-        from bson import DBRef
         self.session = utils.get_session(inc_manipulators=False)
         collection_a = self.session.get_collection('test_a')
         collection_b = self.session.get_collection('test_b')
         collection_a.insert({"_id": 1, "foo": "bar"})
         collection_b.insert({"baz": "blah", "foo": DBRef(collection="test_a", id=1)})
-        manipulator = session.DereferenceManipulator(ref_fields=[('test_b', 'foo')])
+        manipulator = DereferenceManipulator(ref_fields=[('test_b', 'foo')])
         self.session.add_manipulator(manipulator)
         doc = collection_b.find_one({"baz": "blah"})
         self.assertEqual(doc['foo'], 'bar')
@@ -235,7 +296,7 @@ class TestDocs(AdsdataTestCase):
         
     def test_store_doc(self):
         new_doc = {"bibcode": "2000abcd..123..456A", "foo": "bar"}
-        digest = session.doc_digest(new_doc, self.session.db)
+        digest = doc_digest(new_doc, self.session.db)
         self.session.store_doc(new_doc)
         stored_doc = self.session.get_doc(new_doc['bibcode'], manipulate=False)
         self.assertIn("_digest", stored_doc)
@@ -250,7 +311,7 @@ class TestDocs(AdsdataTestCase):
         del existing_doc['_digest']
         del existing_doc['_dt']
         existing_doc['abcd'] = 1234
-        new_digest = session.doc_digest(existing_doc, self.session.db)
+        new_digest = doc_digest(existing_doc, self.session.db)
         self.session.store_doc(existing_doc)
         modified_doc = self.session.get_doc("1999abcd.1234..111Q", manipulate=False)
         self.assertEqual(modified_doc['_digest'], new_digest)
@@ -264,7 +325,7 @@ class TestDocs(AdsdataTestCase):
         existing_dt = existing_doc['_dt']
         del existing_doc['_digest']
         del existing_doc['_dt']
-        new_digest = session.doc_digest(existing_doc, self.session.db)
+        new_digest = doc_digest(existing_doc, self.session.db)
         self.session.store_doc(existing_doc)
         unmodified_doc = self.session.get_doc("1999abcd.1234..111Q", manipulate=False)
         self.assertEqual(new_digest, unmodified_doc['_digest'])

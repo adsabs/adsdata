@@ -1,5 +1,5 @@
 SQLAlchemy>=0.7.3
 MongoAlchemy>=0.13.3
 pytz
-pea
 nose
+mongobox
