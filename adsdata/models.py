@@ -407,11 +407,12 @@ class Grants(DataFileCollection, DocsDataCollection):
     bibcode = fields.StringField(_id=True)
     agency = fields.StringField()
     grant = fields.StringField()
+    grants = fields.ListField(fields.DictField(fields.StringField()))
     
     aggregated = True
     config_collection_name = "grants"
     field_order = [bibcode, agency, grant]
-    docs_fields = [agency, grant]
+    docs_fields = [grants]
     
     @classmethod
     def post_load_data(cls, session, source_collection):

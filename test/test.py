@@ -132,19 +132,6 @@ class TestDataCollection(AdsdataTestCase):
         entry_a = self.session.query(NamedRestKeyCollection).filter(NamedRestKeyCollection.foo == 'a').first()
         self.assertEqual(entry_a.baz, ["w", "5"])
         
-    def test_restkey(self):
-        mongo = mongodb.get_mongo()
-        tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
-        for triplet in zip("abcd","1234","wxyz"):
-            print >>tmp, "%s\t%s\t%s" % triplet
-        tmp.flush()
-        BasicCollection.field_order = [BasicCollection.foo, BasicCollection.bar]
-        BasicCollection.restkey = "baz"
-        BasicCollection.load_data(source_file=tmp.name)
-        entry_a = mongo.query(BasicCollection).filter(BasicCollection.foo == 'a').first()
-        self.assertEqual(entry_a.baz, ["w"])
-        
     def test_load_data_aggregated(self):
         tmp = tempfile.NamedTemporaryFile()
         config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
@@ -205,6 +192,7 @@ class TestDocs(AdsdataTestCase):
     
     def test_generate_docs(self):
         self.load_test_data()
+        self.maxDiff = None
         doc = self.session.generate_doc("1874MNRAS..34..279L")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '1874MNRAS..34..279L'),
                                'bibcode': '1874MNRAS..34..279L',
@@ -216,10 +204,9 @@ class TestDocs(AdsdataTestCase):
                                'refereed': True})
         doc = self.session.generate_doc("2011AJ....142...62H")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '2011AJ....142...62H'),
-                               'agency': u'NASA-HQ',
+                               'grants': [{u'agency': u'NASA-HQ', u'grant': u'NNX09AF08G'}, {u'agency': u'NSF-AST', u'grant': u'0132798'}],
                                'bibcode': '2011AJ....142...62H',
                                'full': DBRef('fulltext', '2011AJ....142...62H'),
-                               'grant': u'NNX09AF08G',
                                'readers': [u'430b0f6bd4', u'47d44dcaa9', u'48e27000f7', u'4cd02adfcc', u'4d46866c42', u'4d9b481763', u'4dce469f96', u'4f42520a18', u'4f63a3ac89', u'5039333cdb', u'504752fb6f', u'50844719d9', u'508fd5906b', u'50a267e8dd', u'50cf5b9972', u'50e4598eac', u'50e5930703', u'50ee1d6594', u'510ed9928c', u'51236f739c', u'51246644f5'],
                                'refereed': True})
         doc = self.session.generate_doc("1899Obs....22..253.")
