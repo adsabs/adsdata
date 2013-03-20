@@ -6,3 +6,6 @@ Created on Oct 11, 2012
 
 class ConfigurationError(Exception):
     pass
+
+class DocDataException(Exception):
+    pass
