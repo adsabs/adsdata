@@ -110,15 +110,3 @@ def map_reduce_dictify(session, source, target_collection_name, group_key, value
     target.update({}, {'$unset': { 'value': 1 }}, multi=True)
     source.drop()
     
-def load_test_data(test_data_dir):
-    import subprocess
-    from config import config
-    for f in os.listdir(test_data_dir):
-        abs_path = os.path.join(test_data_dir, f)
-        collection_name = os.path.splitext(f)[0]
-        with open(os.devnull, "w") as fnull:
-            subprocess.call(["mongoimport", "--drop",
-                             "-d", "test", 
-                             "-c", collection_name, 
-                             "-h", "%s:%d" % (config.MONGO_HOST, config.MONGO_PORT),
-                             abs_path], stdout=fnull)   

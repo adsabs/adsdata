@@ -45,23 +45,38 @@ class AggregatedCollection(models.DataFileCollection):
     aggregated = True
     field_order = [foo, bar]
     
+def load_test_data():
+    import subprocess
+    from config import config
+    test_data_dir = os.path.join(os.path.dirname(__file__), 'demo_data')
+    for f in os.listdir(test_data_dir):
+        abs_path = os.path.join(test_data_dir, f)
+        collection_name = os.path.splitext(f)[0]
+        with open(os.devnull, "w") as fnull:
+            subprocess.call(["mongoimport", "--drop",
+                             "-d", "test", 
+                             "-c", collection_name, 
+                             "-h", "%s:%d" % (config.MONGO_HOST, config.MONGO_PORT),
+                             "-u", config.MONGO_USER,
+                             "-p", config.MONGO_PASSWORD,
+                             abs_path], stdout=fnull)       
+            
 class AdsdataTestCase(unittest2.TestCase):
     
     def setUp(self):
-        self.box = mongobox.MongoBox(scripting=True)
+        self.box = mongobox.MongoBox(scripting=True, auth=True)
         self.box.start()
         self.boxclient = self.box.client()
-        self.box.client()['test'].add_user('test','test')
+        self.boxclient['admin'].add_user('foo','bar')
+        self.boxclient['admin'].authenticate('foo','bar')
+        self.boxclient['test'].add_user('test','test')
         config.MONGO_DATABASE = 'test'
         config.MONGO_HOST = 'localhost'
         config.MONGO_PORT = self.box.port
         config.MONGO_USER = 'test'
         config.MONGO_PASSWORD = 'test'
         self.session = utils.get_session()
-        
-    def load_test_data(self):
-        test_data_dir = os.path.join(os.path.dirname(__file__), 'demo_data')
-        utils.load_test_data(test_data_dir)
+        load_test_data()
         
     def tearDown(self):
         self.box.stop()
@@ -191,7 +206,7 @@ class TestDataCollection(AdsdataTestCase):
 class TestDocs(AdsdataTestCase):        
     
     def test_generate_docs(self):
-        self.load_test_data()
+        load_test_data()
         self.maxDiff = None
         doc = self.session.generate_doc("1874MNRAS..34..279L")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '1874MNRAS..34..279L'),
@@ -231,7 +246,7 @@ class TestDocs(AdsdataTestCase):
                                'refereed': True})
         
     def test_build_docs(self):
-        self.load_test_data()
+        load_test_data()
         self.session.store_doc(self.session.generate_doc("2004PhRvD..70d6004F"))
         doc = self.session.get_doc("2004PhRvD..70d6004F", manipulate=False)
         self.assertTrue(isinstance(doc['ack'], DBRef))
@@ -284,7 +299,7 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(doc['foo'], 'bar')
         
     def test_fetch_doc(self):
-        self.load_test_data()
+        load_test_data()
         doc = self.session.get_doc("2012ASPC..461..837L")
         self.assertIsNotNone(doc)
         # _dt datestamp should be removed by manipulator
@@ -304,7 +319,7 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(stored_doc['_digest'], digest)
         
     def test_modify_existing_doc(self):
-        self.load_test_data()
+        load_test_data()
         existing_doc = self.session.get_doc("1999abcd.1234..111Q", manipulate=False)
         existing_digest = existing_doc['_digest']
         existing_dt = existing_doc['_dt']
@@ -319,7 +334,6 @@ class TestDocs(AdsdataTestCase):
         self.assertNotEqual(modified_doc['_dt'], existing_dt)
         
     def test_unmodified_existing_doc(self):
-        self.load_test_data()
         existing_doc = self.session.get_doc("1999abcd.1234..111Q", manipulate=False)
         existing_digest = existing_doc['_digest']
         existing_dt = existing_doc['_dt']
