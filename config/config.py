@@ -1,4 +1,3 @@
-
 import os
 
 _basedir = os.path.abspath(os.path.dirname(__file__))
@@ -12,7 +11,7 @@ class DataConfig(object):
     MONGO_PORT = 27017
     MONGO_SAFE = True
     MONGO_USER = 'adsdata'
-    MONGO_PASSWORD = 'adsdata'
+    MONGO_PASSWORD = ''
     
     MONGO_DOCS_COLLECTION = 'docs'
     MONGO_DOCS_DEREF_FIELDS = [('docs','full'), ('docs','ack')]
