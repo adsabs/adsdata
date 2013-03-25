@@ -250,7 +250,7 @@ class Bibstem(DataFileCollection):
 class FulltextLink(DataFileCollection):
     bibcode = fields.StringField(_id=True)
     fulltext_source = fields.StringField()
-    database = fields.ListField(fields.StringField())
+    database = fields.StringField(default="")
     provider = fields.StringField()
     
     config_collection_name = 'fulltext_links'

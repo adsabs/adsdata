@@ -50,6 +50,7 @@ class Builder(Process):
                 raise
             finally:
                 self.task_queue.task_done()
+                log.debug("task queue size: %d" % self.task_queue.qsize())
         return
 
 class Saver(Process):
@@ -71,6 +72,9 @@ class Saver(Process):
                 self.session.store_doc(doc)
             except:
                 raise
+            finally:
+                self.result_queue.task_done()
+                log.debug("result queue size: %d" % self.result_queue.qsize())
         
 def get_bibcodes(opts):
     
@@ -105,7 +109,7 @@ def build_synchronous(opts):
         
 def build(opts):
     tasks = JoinableQueue()
-    results = Queue()
+    results = JoinableQueue()
     
     # start up our builder threads
     log.info("Creating %d Builder processes" % opts.threads)
@@ -129,17 +133,20 @@ def build(opts):
     
     # join the results queue. this should
     # block until all tasks in the task queue are completed
-    log.info("Joining the builder threads")
+    log.info("Joining the task queue")
     tasks.join()
+    log.info("Task queue joined")
     
     # poison our saver threads
-    log.info("poisoning our result threads")
+    log.info("poisoning our saver threads")
     for i in xrange(opts.threads):
         results.put(None)
     
-    log.info("Joining the saver threads")
-    for s in savers:
-        s.join()
+#    log.info("Joining the saver threads")
+#    for s in savers:
+#        s.join()
+    log.info("Joining the result queue")
+    results.join()
         
     log.info("All work complete")
 
@@ -154,7 +161,7 @@ if __name__ == "__main__":
     op.set_usage("usage: sync_mongo_data.py [options] [%s]" % '|'.join(commands))
     op.add_option('-i', '--infile', dest="infile", action="store")
     op.add_option('-s', '--source_model', dest="source_model", action="store", default="Accno")
-    op.add_option('-t','--threads', dest="threads", action="store", type=int, default=cpu_count() * 2)
+    op.add_option('-t','--threads', dest="threads", action="store", type=int, default=cpu_count()) # * 2)
     op.add_option('-l','--limit', dest="limit", action="store", type=int)
     op.add_option('-d','--debug', dest="debug", action="store_true", default=False)
     op.add_option('-v','--verbose', dest="verbose", action="store_true", default=False)
