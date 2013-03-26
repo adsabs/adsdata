@@ -167,6 +167,10 @@ if __name__ == "__main__":
     op.add_option('-l','--limit', dest="limit", action="store", type=int)
     op.add_option('-d','--debug', dest="debug", action="store_true", default=False)
     op.add_option('-v','--verbose', dest="verbose", action="store_true", default=False)
+    op.add_option('--profile', dest='profile', action='store_true',
+        help='capture program execution profile', default=False)
+    op.add_option('--pygraph', dest='pygraph', action='store_true',
+        help='capture exec profile in a call graph image', default=False)
     opts, args = op.parse_args() 
     
     logfile = "%s/%s" % (config.LOG_DIR, os.path.basename(__file__))
@@ -181,7 +185,18 @@ if __name__ == "__main__":
     start_cpu = time.clock()
     start_real = time.time()        
     
-    eval(cmd)(opts)
+    if opts.profile:
+        import profile
+        profile.run("%s(opts)" % cmd, "profile.out")
+    else:
+        if opts.pygraph:
+            import pycallgraph
+            pycallgraph.start_trace()
+
+        eval(cmd)(opts)
+
+        if opts.pygraph: 
+            pycallgraph.make_dot_graph('profile.png')
     
     end_cpu = time.clock()
     end_real = time.time()
