@@ -41,8 +41,8 @@ class Builder(Process):
                 break
             log.info("Worker %s: working on %s" % (self.name, bibcode))
             try:
-                result = self.session.generate_doc(bibcode)
-                self.result_queue.put(result)
+                doc = self.session.generate_doc(bibcode)
+                self.session.store_doc(doc)
             except DocDataException, e:
                 log.error("Something went wrong building %s: %s" % (bibcode, e))
             except:
@@ -117,11 +117,6 @@ def build(opts):
     for b in builders:
         b.start()
         
-    log.info("Creating %d Saver processes" % opts.threads)
-    savers = [ Saver(results) for i in xrange(opts.threads)]
-    for s in savers:
-        s.start()
-        
     # queue up the bibcodes
     for bib in get_bibcodes(opts):
         tasks.put(bib)
@@ -135,18 +130,25 @@ def build(opts):
     # block until all tasks in the task queue are completed
     log.info("Joining the task queue")
     tasks.join()
-    log.info("Task queue joined")
+    log.info("Joining the task threads")
+    for b in builders:
+        b.join()
     
-    # poison our saver threads
-    log.info("poisoning our saver threads")
-    for i in xrange(opts.threads):
-        results.put(None)
-    
+#    log.info("Creating %d Saver processes" % opts.threads)
+#    savers = [ Saver(results) for i in xrange(opts.threads)]
+#    for s in savers:
+#        s.start()
+#        
+#    # poison our saver threads
+#    log.info("poisoning our saver threads")
+#    for i in xrange(opts.threads):
+#        results.put(None)
+#    
+#    log.info("Joining the result queue")
+#    results.join()
 #    log.info("Joining the saver threads")
 #    for s in savers:
 #        s.join()
-    log.info("Joining the result queue")
-    results.join()
         
     log.info("All work complete")
 
