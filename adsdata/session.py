@@ -30,6 +30,7 @@ class DataSession(object):
         self.create_ok = create_ok
         self.db = self.malchemy.db
         self.docs = self.db[docs_collection]
+        self.docs.ensure_index([('bibcode',1),('_digest',1)])
         self.pymongo = self.db.connection
         if safe:
             self.pymongo.db.write_concern = {'w': 1, 'j': True}

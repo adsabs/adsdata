@@ -53,9 +53,8 @@ class DocsDataCollection(DataCollection):
     
     @classmethod
     def get_entry(cls, session, bibcode):
-        if not hasattr(cls, 'collection'):
-            cls.collection = session.get_collection(cls.config_collection_name)
-        return cls.collection.find_one({'_id': bibcode})
+        collection = session.get_collection(cls.config_collection_name)
+        return collection.find_one({'_id': bibcode})
 
     @classmethod
     def add_docs_data(cls, doc, session, bibcode):
