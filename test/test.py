@@ -212,8 +212,9 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(doc, {'ack': DBRef('fulltext', '1874MNRAS..34..279L'),
                                'bibcode': '1874MNRAS..34..279L',
                                'boost': 0.16849827679273299,
-                               'citations': 0,
+                               'citation_count': 0,
                                'full': DBRef('fulltext', '1874MNRAS..34..279L'),
+                               'read_count': 4,
                                'readers': [u'4f43e9286f', u'5108e7c0a8'],
                                'reads': [0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 0, 1, 2, 0, 1, 0, 5, 3],
                                'refereed': True})
@@ -228,8 +229,9 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(doc, {'ack': DBRef('fulltext', '1899Obs....22..253.'),
                                'bibcode': '1899Obs....22..253.',
                                'boost': 0.115017967498934,
-                               'citations': 0,
+                               'citation_count': 0,
                                'full': DBRef('fulltext', '1899Obs....22..253.'),
+                               'read_count': 2,
                                'reads': [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0],
                                'refereed': True})
         doc = self.session.generate_doc("1995MNRAS.274...31W")
