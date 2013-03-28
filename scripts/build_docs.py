@@ -88,6 +88,11 @@ def build(opts):
     tasks = JoinableQueue()
     results = JoinableQueue()
     
+    if opts.remove:
+        log.info("Removing existing docs collection")
+        session = utils.get_session()
+        session.docs.drop()
+        
     # start up our builder threads
     log.info("Creating %d Builder processes" % opts.threads)
     builders = [ Builder(tasks, results) for i in xrange(opts.threads)]
@@ -126,6 +131,7 @@ if __name__ == "__main__":
     op.add_option('-s', '--source_model', dest="source_model", action="store", default="Accno")
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=cpu_count()) # * 2)
     op.add_option('-l','--limit', dest="limit", action="store", type=int)
+    op.add_option('-r','--remove', dest="remove", action="store_true", default=False)
     op.add_option('-d','--debug', dest="debug", action="store_true", default=False)
     op.add_option('-v','--verbose', dest="verbose", action="store_true", default=False)
     op.add_option('--profile', dest='profile', action='store_true',
