@@ -98,7 +98,7 @@ class DataFileCollection(DataCollection):
     def last_modified(cls):
         collection_name = cls.config_collection_name
         source_file = cls.get_source_file()
-        log.info("checking freshness of %s collection vs %s" % (collection_name, source_file))
+        log.debug("checking freshness of %s collection vs %s" % (collection_name, source_file))
         modified = datetime.fromtimestamp(os.stat(source_file)[ST_MTIME]).replace(tzinfo=pytz.utc)
         log.debug("%s last modified: %s" % (source_file, modified))
         return modified
@@ -114,10 +114,10 @@ class DataFileCollection(DataCollection):
         last_synced = cls.last_synced(session)
         
         if not last_synced or last_modified > last_synced:
-            log.info("%s needs updating" % collection_name)
+            log.debug("%s needs updating" % collection_name)
             return True
         else:
-            log.info("%s does not need updating" % collection_name)
+            log.debug("%s does not need updating" % collection_name)
             return False
         
     @classmethod
@@ -141,7 +141,7 @@ class DataFileCollection(DataCollection):
             load_collection_name = collection_name
         collection = session.get_collection(load_collection_name)
         collection.drop()
-        log.info("loading data into %s" % load_collection_name)
+        log.debug("loading data into %s" % load_collection_name)
         
         if not source_file:
             source_file = cls.get_source_file()
@@ -163,17 +163,17 @@ class DataFileCollection(DataCollection):
         
         cls.insert_records(reader, collection, batch_size)
         
-        log.info("done loading %d records into %s" % (collection.count(), load_collection_name))
+        log.debug("done loading %d records into %s" % (collection.count(), load_collection_name))
 
         cls.post_load_data(session, collection)
         
         dlt = DataLoadTime(collection=collection_name, last_synced=datetime.utcnow().replace(tzinfo=pytz.utc))
         session.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
-        log.info("%s load time updated to %s" % (collection_name, str(dlt.last_synced)))
+        log.debug("%s load time updated to %s" % (collection_name, str(dlt.last_synced)))
         
     @classmethod
     def insert_records(cls, reader, collection, batch_size):
-        log.info("inserting records into %s..." % collection.name)
+        log.debug("inserting records into %s..." % collection.name)
         
         batch = []
         batch_num = 1
@@ -187,13 +187,13 @@ class DataFileCollection(DataCollection):
             cls.coerce_types(record)
             batch.append(record)
             if len(batch) >= batch_size:
-                log.info("inserting batch %d into %s" % (batch_num, collection.name))
+                log.debug("inserting batch %d into %s" % (batch_num, collection.name))
                 collection.insert(batch, safe=True)
                 batch = []
                 batch_num += 1
 
         if len(batch):
-            log.info("inserting final batch into %s" % collection.name)
+            log.debug("inserting final batch into %s" % collection.name)
             collection.insert(batch, safe=True)
 
     @classmethod
@@ -256,7 +256,7 @@ class FulltextLink(DataFileCollection):
     bibcode = fields.StringField(_id=True)
     fulltext_source = fields.StringField()
     database = fields.StringField(default="")
-    provider = fields.StringField()
+    provider = fields.StringField(default="")
     
     config_collection_name = 'fulltext_links'
     field_order = [bibcode,fulltext_source,database,provider]
@@ -335,9 +335,9 @@ class Refereed(DataFileCollection, DocsDataCollection):
     
 class DocMetrics(DataFileCollection, DocsDataCollection):
     bibcode = fields.StringField(_id=True)
-    boost = fields.FloatField()
-    citations = fields.IntField()
-    reads = fields.IntField()
+    boost = fields.FloatField(default=0.0)
+    citations = fields.IntField(default=0)
+    reads = fields.IntField(default=0)
     
     config_collection_name = 'docmetrics'
     field_order = [bibcode,boost,citations,reads]

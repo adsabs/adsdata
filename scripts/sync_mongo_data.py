@@ -59,7 +59,9 @@ def status(opts):
         log.setLevel(logging.DEBUG)
     session = utils.get_session()
     for model_class in get_models(opts):
-        log.info("%s needs sync? : %s" % (model_class.config_collection_name, model_class.needs_sync(session)))
+        needs_sync = model_class.needs_sync(session) and 'yes' or 'no'
+        last_synced = model_class.last_synced(session)
+        log.info("%s last synced: %s; needs sync? : %s" % (model_class.config_collection_name, last_synced, needs_sync))
     
 if __name__ == "__main__":
     
