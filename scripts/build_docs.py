@@ -53,29 +53,6 @@ class Builder(Process):
                 log.debug("task queue size: %d" % self.task_queue.qsize())
         return
 
-class Saver(Process):
-    
-    def __init__(self, result_queue):
-        Process.__init__(self)
-        self.result_queue = result_queue
-        self.session = utils.get_session()
-        
-    def run(self):
-        log = logging.getLogger()
-        while True:
-            doc = self.result_queue.get()
-            if doc is None:
-                log.info("Nothing left to save for worker %s" % self.name)
-                break
-            log.info("Saver %s is working on %s" % (self.name, doc['bibcode']))
-            try:
-                self.session.store_doc(doc)
-            except:
-                raise
-            finally:
-                self.result_queue.task_done()
-                log.debug("result queue size: %d" % self.result_queue.qsize())
-        
 def get_bibcodes(opts):
     
     if opts.infile:
@@ -134,22 +111,6 @@ def build(opts):
     for b in builders:
         b.join()
     
-#    log.info("Creating %d Saver processes" % opts.threads)
-#    savers = [ Saver(results) for i in xrange(opts.threads)]
-#    for s in savers:
-#        s.start()
-#        
-#    # poison our saver threads
-#    log.info("poisoning our saver threads")
-#    for i in xrange(opts.threads):
-#        results.put(None)
-#    
-#    log.info("Joining the result queue")
-#    results.join()
-#    log.info("Joining the saver threads")
-#    for s in savers:
-#        s.join()
-        
     log.info("All work complete")
 
 def status(opts):
