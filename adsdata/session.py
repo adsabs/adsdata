@@ -30,7 +30,7 @@ class DataSession(object):
         self.create_ok = create_ok
         self.db = self.malchemy.db
         self.docs = self.db[docs_collection]
-        self.docs.ensure_index([('bibcode',1),('_digest',1)])
+        self.docs.ensure_index('_digest')
         self.pymongo = self.db.connection
         if safe:
             self.pymongo.db.write_concern = {'w': 1, 'j': True}
@@ -64,7 +64,7 @@ class DataSession(object):
         return self.malchemy.execute_query(q, self.malchemy)
     
     def get_doc(self, bibcode, manipulate=True):
-        spec = {'bibcode': bibcode}
+        spec = {'_id': bibcode}
         return self.docs.find_one(spec, manipulate=manipulate)
         
     def docs_sources(self):
@@ -74,7 +74,7 @@ class DataSession(object):
         return self.doc_source_models
     
     def generate_doc(self, bibcode):
-        doc = {'bibcode': bibcode}
+        doc = {'_id': bibcode}
         for model_class in self.docs_sources():
             model_class.add_docs_data(doc, self, bibcode)
         return doc
@@ -84,7 +84,7 @@ class DataSession(object):
         log = logging.getLogger()
         
         doc["_digest"] = doc_digest(doc, self.db)
-        spec = {'bibcode': doc['bibcode'] } #, '_digest': digest}
+        spec = {'_id': doc['_id'] } #, '_digest': digest}
         
         # look for existing doc 
         existing = self.docs.find_one(spec, manipulate=False)

@@ -1,2 +1,2 @@
-{ "_id": 1, "_digest" : "3d5036511ab2b845b14447b5fe713b9637e5b4cc", "bibcode" : "2012ASPC..461..837L", "_dt" : { "$date" : 1333973876058 }, "readers" : [ "4a5f7fb625", "4c065d7172", "4d300b9613", "4da65ee45b", "507c3bed08", "50818e91a0", "50c7febf85" ] }
-{ "_id": 2, "_digest" : "71c6c6a0ff905c58c37f146ceba82c11252eb149", "bibcode" : "1999abcd.1234..111Q", "bar" : "baz", "_dt" : { "$date" : 1333973076058 }}
+{ "_digest" : "c66d9e2b2d49d073952510029940b9f2b65693e8", "_id" : "2012ASPC..461..837L", "_dt" : { "$date" : 1333973876058 }, "readers" : [ "4a5f7fb625", "4c065d7172", "4d300b9613", "4da65ee45b", "507c3bed08", "50818e91a0", "50c7febf85" ] }
+{ "_digest" : "7bb442f244e57b9075f2e89b5e761aea23b1acd6", "_id" : "1999abcd.1234..111Q", "bar" : "baz", "_dt" : { "$date" : 1333973076058 }}

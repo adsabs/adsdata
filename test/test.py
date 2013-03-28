@@ -210,7 +210,7 @@ class TestDocs(AdsdataTestCase):
         self.maxDiff = None
         doc = self.session.generate_doc("1874MNRAS..34..279L")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '1874MNRAS..34..279L'),
-                               'bibcode': '1874MNRAS..34..279L',
+                               '_id': '1874MNRAS..34..279L',
                                'boost': 0.16849827679273299,
                                'citation_count': 0,
                                'full': DBRef('fulltext', '1874MNRAS..34..279L'),
@@ -221,13 +221,13 @@ class TestDocs(AdsdataTestCase):
         doc = self.session.generate_doc("2011AJ....142...62H")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '2011AJ....142...62H'),
                                'grants': [{u'agency': u'NASA-HQ', u'grant': u'NNX09AF08G'}, {u'agency': u'NSF-AST', u'grant': u'0132798'}],
-                               'bibcode': '2011AJ....142...62H',
+                               '_id': '2011AJ....142...62H',
                                'full': DBRef('fulltext', '2011AJ....142...62H'),
                                'readers': [u'430b0f6bd4', u'47d44dcaa9', u'48e27000f7', u'4cd02adfcc', u'4d46866c42', u'4d9b481763', u'4dce469f96', u'4f42520a18', u'4f63a3ac89', u'5039333cdb', u'504752fb6f', u'50844719d9', u'508fd5906b', u'50a267e8dd', u'50cf5b9972', u'50e4598eac', u'50e5930703', u'50ee1d6594', u'510ed9928c', u'51236f739c', u'51246644f5'],
                                'refereed': True})
         doc = self.session.generate_doc("1899Obs....22..253.")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '1899Obs....22..253.'),
-                               'bibcode': '1899Obs....22..253.',
+                               '_id': '1899Obs....22..253.',
                                'boost': 0.115017967498934,
                                'citation_count': 0,
                                'full': DBRef('fulltext', '1899Obs....22..253.'),
@@ -236,13 +236,13 @@ class TestDocs(AdsdataTestCase):
                                'refereed': True})
         doc = self.session.generate_doc("1995MNRAS.274...31W")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '1995MNRAS.274...31W'),
-                               'bibcode': '1995MNRAS.274...31W',
+                               '_id': '1995MNRAS.274...31W',
                                'full': DBRef('fulltext', '1995MNRAS.274...31W'),
                                'readers': [u'4f01774d0a', u'50effcf0d8', u'510ac1772a', u'51234f16c0', u'512d897d95'],
                                'refereed': True})
         doc = self.session.generate_doc("2002JPhA...35.8109K")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '2002JPhA...35.8109K'),
-                               'bibcode': '2002JPhA...35.8109K',
+                               '_id': '2002JPhA...35.8109K',
                                'full': DBRef('fulltext', '2002JPhA...35.8109K'),
                                'readers': [u'X0cae078a6', u'X12049c5ae'],
                                'refereed': True})
@@ -312,10 +312,10 @@ class TestDocs(AdsdataTestCase):
         self.assertIn("_dt", doc)
         
     def test_store_doc(self):
-        new_doc = {"bibcode": "2000abcd..123..456A", "foo": "bar"}
+        new_doc = {"_id": "2000abcd..123..456A", "foo": "bar"}
         digest = doc_digest(new_doc, self.session.db)
         self.session.store_doc(new_doc)
-        stored_doc = self.session.get_doc(new_doc['bibcode'], manipulate=False)
+        stored_doc = self.session.get_doc(new_doc['_id'], manipulate=False)
         self.assertIn("_digest", stored_doc)
         self.assertIn("_dt", stored_doc)
         self.assertEqual(stored_doc['_digest'], digest)
