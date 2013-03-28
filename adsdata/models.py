@@ -336,12 +336,12 @@ class Refereed(DataFileCollection, DocsDataCollection):
 class DocMetrics(DataFileCollection, DocsDataCollection):
     bibcode = fields.StringField(_id=True)
     boost = fields.FloatField(default=0.0)
-    citations = fields.IntField(default=0)
-    reads = fields.IntField(default=0)
+    citation_count = fields.IntField(default=0)
+    read_count = fields.IntField(default=0)
     
     config_collection_name = 'docmetrics'
-    field_order = [bibcode,boost,citations,reads]
-    docs_fields = [boost, citations, reads]
+    field_order = [bibcode,boost,citation_count,read_count]
+    docs_fields = [boost, citation_count, read_count]
     
     def __str__(self):
         return "DocMetrics(%s): %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
