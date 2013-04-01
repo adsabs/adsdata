@@ -32,6 +32,17 @@ def init_logging(logfile, verbose=False, debug=False):
         log.debug("debug level logging enabled")
     return log
 
+def commandList():
+    """
+    decorator that allows scripts to register functions to be used as script commands
+    """
+    registry = {}
+    def registrar(func):
+        registry[func.__name__] = func
+        return func
+    registrar.map = registry
+    return registrar
+
 def mongo_uri(host, port, db=None, user=None, passwd=None):
     if user and passwd:
         uri = "mongodb://%s:%s@%s:%d/%s" % (user, passwd, host, port, db)

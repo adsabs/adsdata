@@ -18,11 +18,8 @@ from pymongo import MongoClient
 from config import config
 from adsdata import utils, models
 
-def uri2collection(uri):
-    host, db, collection = uri.split("/")
-    mongo = MongoClient(host)
-    return mongo[db][collection]
-    
+commands = utils.commandList()
+
 class Worker(Process):
 
     def __init__(self, task_queue, deletes_queue, authority):
@@ -95,8 +92,9 @@ def find_deletions(opts):
             yield deletes.get_nowait()
         except QueueEmpty:
             break
-
+@commands
 def delete(opts):
+    log.info("Deleting all records from %s that do not appear in %s" % (opts.subject, opts.authority))
     session = utils.get_session()
     subject_collection = session.get_collection(opts.subject)
     count = 0
@@ -105,17 +103,16 @@ def delete(opts):
         subject_collection.remove({'_id': bib})
     log.info("done. %d items deleted" % count)
 
+@commands
 def list(opts):
+    log.info("Listing all records from %s that do not appear in %s" % (opts.subject, opts.authority))
     for bib in find_deletions(opts):
         print bib
 
 if __name__ == '__main__':
     
-    commands = ['list','delete']
-    
     op = OptionParser()
-    op.add_option('-b', '--database', dest="database", action="store", default='adsdata',
-                  help="database to connect to")
+    op.set_usage("usage: deletions.py [options] [%s]" % '|'.join(commands.map.keys()))
     op.add_option('-a', '--authority', dest="authority", action="store", default=models.Accno.config_collection_name,
                   help="collection to use as the authority")
     op.add_option('-s', '--subject', dest="subject", action="store", default='docs',
@@ -139,7 +136,7 @@ if __name__ == '__main__':
     start_cpu = time.clock()
     start_real = time.time()        
     
-    eval(cmd)(opts)
+    commands.map[cmd](opts)
     
     end_cpu = time.clock()
     end_real = time.time()

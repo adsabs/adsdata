@@ -29,21 +29,10 @@ class Copier(Process):
     def __init__(self, task_queue, opts):
         Process.__init__(self)
         self.task_queue = task_queue
-        self.remote = MongoClient(host='mongodb://adszee:27017')['solr4ads']['docs']
-        local_db = MongoClient(host='mongodb://localhost:27017')['adsdata']
-        local_db.authenticate('adsdata','Ri1cGV7sNr')
-        self.local = local_db['fulltext']
-        self.query = {}
+        self.from_collection = MongoClient(host=opts.from_mongo)['solr4ads']['docs']
+        session = utils.get_session()
+        self.to_collection = session.get_collection('fulltext')
         self.wanted = dict([(x,1) for x in opts.fields.split(',')])
-        if opts.gtime:
-            (n, unit) = re.search('^(\d+)(d|h|m)$', opts.gtime).groups()
-            if unit == 'd':
-                tdelta = timedelta(int(n))
-            elif unit == 'h':
-                tdelta = timedelta(0, 0, 0, 0, 0, int(n))
-            elif unit == 'm':
-                tdelta = timedelta(0, 0, 0, 0, int(n))
-            self.query['_generated'] = {"$gt": datetime.now() - tdelta}
 
     def run(self):
         log = logging.getLogger()
@@ -53,14 +42,13 @@ class Copier(Process):
                 log.info("Nothing left to do for worker %s" % self.name)
                 break
             log.info("Copier %s is working on %s" % (self.name, bib))
-            self.query['bibcode'] = bib
             try:
                 log.info("Copier %s is querying on %s" % (self.name, bib))
-                doc = self.remote.find_one(self.query, self.wanted)
+                doc = self.from_collection.find_one({'bibcode': bib}, self.wanted)
                 if not doc: continue
                 doc['_id'] = bib
                 del doc['bibcode']
-                self.local.save(doc)
+                self.to_collection.save(doc)
             except:
                 raise
 
@@ -80,7 +68,7 @@ def main(opts):
     tasks = Queue()
 
     # start up our builder threads
-    log.info("Creating %d Builder processes" % opts.threads)
+    log.debug("Creating %d Copier processes" % opts.threads)
     procs = [ Copier(tasks, opts) for i in xrange(opts.threads)]
     for p in procs:
         p.start()
@@ -89,7 +77,7 @@ def main(opts):
         tasks.put(bib)
         
     # add some poison pills to the end of the queue
-    log.info("poisoning our task threads")
+    log.debug("poisoning our task threads")
     for i in xrange(opts.threads):
         tasks.put(None)
 
@@ -99,12 +87,9 @@ if __name__ == '__main__':
     
     op = OptionParser()
     op.add_option('--from_mongo', dest="from_mongo", action="store")
-    op.add_option('--to_mongo', dest="to_mongo", action="store")
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=8)#cpu_count())# * 2)
     op.add_option('--limit', dest='limit', action='store',
         help='process this many', type=int, default=None)
-#    op.add_option('--query', dest='query', action='store',
-#        help='documents that match this mongodb query will be indexed', type=str, default="{'ft_type': {'$exists': True}}")
     op.add_option('--fields', dest='fields', action='store',
         help='comma-separated list of mongo fields that will be used', type=str, default="bibcode,full,ack")
     op.add_option('--gtime', dest='gtime', action='store',

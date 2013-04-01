@@ -13,6 +13,7 @@ from adsdata import utils
 from adsdata.session import DataSession
 from config import config
 
+commands = utils.commandList()
     
 def load_data(model_class):
     log = logging.getLogger()
@@ -27,6 +28,7 @@ def get_models(opts):
             continue
         yield model_class
         
+@commands
 def sync(opts):
     """
     updates the mongo data collections from their data source files
@@ -40,6 +42,7 @@ def sync(opts):
     updates = []
     for model_class in get_models(opts):
         if model_class.needs_sync(session) or opts.force:
+            log.info("%s needs synching" % model_class.config_collection_name)
             updates.append(model_class)
         else:
             log.info("%s does not need syncing" % model_class.config_collection_name)
@@ -50,6 +53,7 @@ def sync(opts):
         for cls in updates:
             load_data(cls)
         
+@commands
 def status(opts):
     """
     reports on update status of mongo data collections
@@ -65,10 +69,8 @@ def status(opts):
     
 if __name__ == "__main__":
     
-    commands = ['sync','status']
-    
     op = OptionParser()
-    op.set_usage("usage: sync_mongo_data.py [options] [%s]" % '|'.join(commands))
+    op.set_usage("usage: sync_mongo_data.py [options] [%s]" % '|'.join(commands.map.keys()))
     op.add_option('-c','--collection', dest="collection", action="append", default=[])
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=cpu_count())
     op.add_option('-f','--force', dest="force", action="store_true", default=False)
@@ -81,14 +83,14 @@ if __name__ == "__main__":
     
     try:
         cmd = args.pop()
-        assert cmd in commands
+        assert cmd in commands.map
     except (IndexError,AssertionError):
         op.error("missing or invalid command")
         
     start_cpu = time.clock()
     start_real = time.time()        
     
-    eval(cmd)(opts)
+    commands.map[cmd](opts)
     
     end_cpu = time.clock()
     end_real = time.time()

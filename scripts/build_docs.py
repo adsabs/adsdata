@@ -12,16 +12,14 @@ import sys
 import time
 import logging
 import itertools
-from datetime import datetime
 from optparse import OptionParser
-from Queue import Empty as QueueEmpty
-from multiprocessing import Process, Queue, JoinableQueue, cpu_count
+from multiprocessing import Process, JoinableQueue, cpu_count
 
 from adsdata import utils
-from adsdata.session import DatetimeInjector
-from adsdata import models
 from adsdata.exceptions import *
 from config import config
+
+commands = utils.commandList()
 
 class Builder(Process):
     
@@ -75,6 +73,7 @@ def get_bibcodes(opts):
     
     return bibcodes
     
+@commands
 def build_synchronous(opts):
     session = utils.get_session()
     for bib in get_bibcodes(opts):
@@ -84,6 +83,7 @@ def build_synchronous(opts):
             log.info("Saved: %s" % str(saved))
     return
         
+@commands
 def build(opts):
     tasks = JoinableQueue()
     results = JoinableQueue()
@@ -123,10 +123,8 @@ def status(opts):
 
 if __name__ == "__main__":
     
-    commands = ['build','build_synchronous', 'status']
-    
     op = OptionParser()
-    op.set_usage("usage: sync_mongo_data.py [options] [%s]" % '|'.join(commands))
+    op.set_usage("usage: build_docs.py [options] [%s]" % '|'.join(commands.map.keys()))
     op.add_option('-i', '--infile', dest="infile", action="store")
     op.add_option('-s', '--source_model', dest="source_model", action="store", default="Accno")
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=cpu_count()) # * 2)
@@ -145,7 +143,7 @@ if __name__ == "__main__":
     
     try:
         cmd = args.pop()
-        assert cmd in commands
+        assert cmd in commands.map
     except (IndexError,AssertionError):
         op.error("missing or invalid command")
         
@@ -160,7 +158,7 @@ if __name__ == "__main__":
             import pycallgraph
             pycallgraph.start_trace()
 
-        eval(cmd)(opts)
+        commands.map[cmd](opts)
 
         if opts.pygraph: 
             pycallgraph.make_dot_graph('profile.png')
