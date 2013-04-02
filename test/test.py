@@ -118,13 +118,23 @@ class TestDataCollection(AdsdataTestCase):
     def test_load_data(self):
         tmp = tempfile.NamedTemporaryFile()
         config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
-        for triplet in zip("abcd","1234","wxyz"):
-            print >>tmp, "%s\t%s\t%s" % triplet
+        for pair in zip("abcd","1234"):
+            print >>tmp, "%s\t%s" % pair
+            
+        # test a couple of lines with a missing values
+        print >>tmp, "e"
+        print >>tmp, "\t6"
+        
         tmp.flush()
         self.assertTrue(BasicCollection.last_synced(self.session) is None)
         BasicCollection.load_data(self.session)
         self.assertTrue(type(BasicCollection.last_synced(self.session)) == datetime, 'load data creates DLT entry')
-        self.assertEqual(self.session.query(BasicCollection).count(), 4, 'all records loaded')
+        self.assertEqual(self.session.query(BasicCollection).count(), 6, 'all records loaded')
+        
+        # check the rows with empty values
+        collection = self.session.get_collection('adsdata_test')
+        self.assertEqual(collection.find_one({'_id': 'e'}), {'_id': 'e', 'bar': ''})
+        self.assertEqual(collection.find_one({'_id': ''}), {'_id': '', 'bar': 6})
         
     def test_restkey(self):
         tmp = tempfile.NamedTemporaryFile()
@@ -146,7 +156,7 @@ class TestDataCollection(AdsdataTestCase):
         NamedRestKeyCollection.load_data(self.session, source_file=tmp.name)
         entry_a = self.session.query(NamedRestKeyCollection).filter(NamedRestKeyCollection.foo == 'a').first()
         self.assertEqual(entry_a.baz, ["w", "5"])
-        
+    
     def test_load_data_aggregated(self):
         tmp = tempfile.NamedTemporaryFile()
         config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name

@@ -159,7 +159,7 @@ class DataFileCollection(DataCollection):
             return
 
         field_names = [get_collection_field_name(x) for x in cls.field_order]
-        reader = csv.DictReader(fh, field_names, delimiter="\t", restkey=cls.restkey)
+        reader = csv.DictReader(fh, field_names, delimiter="\t", restkey=cls.restkey, restval="")
         
         cls.insert_records(reader, collection, batch_size)
         
