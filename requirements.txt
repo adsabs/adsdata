@@ -3,3 +3,5 @@ MongoAlchemy>=0.13.3
 pytz
 nose
 -e git+https://github.com/theorm/mongobox.git#egg=mongobox
+Flask==0.10.1
+simplejson
