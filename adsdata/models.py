@@ -187,14 +187,14 @@ class DataFileCollection(DataCollection):
             cls.coerce_types(record)
             batch.append(record)
             if len(batch) >= batch_size:
-                log.debug("inserting batch %d into %s" % (batch_num, collection.name))
-                collection.insert(batch, safe=True)
+                log.debug("inserting batch %d into %s", batch_num, collection.name)
+                collection.insert(batch)
                 batch = []
                 batch_num += 1
 
         if len(batch):
             log.debug("inserting final batch into %s" % collection.name)
-            collection.insert(batch, safe=True)
+            collection.insert(batch)
 
     @classmethod
     def coerce_types(cls, record):

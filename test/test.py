@@ -9,10 +9,15 @@ import sys
 import site
 site.addsitedir(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) #@UndefinedVariable
 
+if sys.version_info < (2,7):
+    import unittest2 as unittest
+else:
+    import unittest
+
 import pytz
 import tempfile
 import mongobox
-import unittest2
+
 import subprocess
 from stat import *
 from time import sleep
@@ -61,7 +66,7 @@ def load_test_data():
                              "-p", config.MONGO_PASSWORD,
                              abs_path], stdout=fnull)       
             
-class AdsdataTestCase(unittest2.TestCase):
+class AdsdataTestCase(unittest.TestCase):
     
     def setUp(self):
         self.box = mongobox.MongoBox(scripting=True, auth=True)
@@ -362,4 +367,4 @@ class TestDocs(AdsdataTestCase):
         
     
 if __name__ == '__main__':
-    unittest2.main()
+    unittest.main()
