@@ -92,7 +92,7 @@ class DataSession(object):
             # do the digest values match?
             if existing.has_key("_digest") and existing["_digest"] == doc["_digest"]:
                 # no change; do nothing
-                log.debug("Digest match. No change to %s" % str(spec))
+                log.debug("Digest match. No change to %s", str(spec))
                 return
             elif existing.has_key("_digest"):
                 # add existing digest value to spec to avoid race conditions

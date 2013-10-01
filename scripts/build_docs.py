@@ -34,21 +34,21 @@ class Builder(Process):
         while True:
             bibcode = self.task_queue.get()
             if bibcode is None:
-                log.info("Nothing left to build for worker %s" % self.name)
+                log.info("Nothing left to build for worker %s", self.name)
                 self.task_queue.task_done()
                 break
-            log.info("Worker %s: working on %s" % (self.name, bibcode))
+            log.info("Worker %s: working on %s", self.name, bibcode)
             try:
                 doc = self.session.generate_doc(bibcode)
                 self.session.store_doc(doc)
             except DocDataException, e:
-                log.error("Something went wrong building %s: %s" % (bibcode, e))
+                log.error("Something went wrong building %s: %s", bibcode, e)
             except:
-                log.error("Something went wrong building %s" % bibcode)
+                log.error("Something went wrong building %s", bibcode)
                 raise
             finally:
                 self.task_queue.task_done()
-                log.debug("task queue size: %d" % self.task_queue.qsize())
+                log.debug("task queue size: %d", self.task_queue.qsize())
         return
 
 def get_bibcodes(opts):
@@ -80,7 +80,7 @@ def build_synchronous(opts):
         doc = session.generate_doc(bib)
         if doc is not None:
             saved = session.store_doc(doc)
-            log.info("Saved: %s" % str(saved))
+            log.info("Saved: %s", str(saved))
     return
         
 @commands
