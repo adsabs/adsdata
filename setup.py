@@ -18,7 +18,10 @@ setup(
     url = 'http://github.com/adsabs/adsdata',
     packages = [
         'adsdata',
+        'flaskext',
+        'flaskext.adsdata'
     ],
+    namespace_packages=['flaskext'],
     classifiers = [
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',

@@ -6,9 +6,6 @@ flask.ext.adsdata
 Provides interface to the adsdata metadata collections in mongodb
 """
 
-__version__ = '0.01'
-__versionfull__ = __version__
-
 import logging
 
 from flask import current_app, g
@@ -58,10 +55,3 @@ class FlaskAdsdata(object):
         app.extensions['adsdata'] = session
         return session
     
-#    def init_session(self, config):
-#        uri = mongo_uri(config['ADSDATA_MONGO_HOST'], config['ADSDATA_MONGO_PORT'], 
-#                        db=config['ADSDATA_MONGO_DATABASE'], 
-#                        user=config['ADSDATA_MONGO_USER'], 
-#                        passwd=config['ADSDATA_MONGO_PASSWORD'])
-#        return DataSession(config['ADSDATA_MONGO_DATABASE'], uri) 
-        
