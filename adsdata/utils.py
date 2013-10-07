@@ -8,12 +8,17 @@ import os
 import sys
 from jinja2 import Template
 from datetime import datetime
+import ConfigParser
+
 
 import logging
 log = logging.getLogger(__name__)
         
-def init_logging(logfile, verbose=False, debug=False):
-    logfile = logfile + "." + datetime.now().strftime("%Y%m%d-%H%M%S")
+def init_logging(base_dir, verbose=False, debug=False):
+
+    log_dir = os.path.exists(base_dir + "/logs") and base_dir + "/logs" or "."
+    logfile = "%s/%s" % (log_dir, os.path.basename(__file__)) + "." + datetime.now().strftime("%Y%m%d-%H%M%S")
+
     logging.basicConfig(
         filename = logfile, 
         level = logging.INFO,
@@ -31,6 +36,24 @@ def init_logging(logfile, verbose=False, debug=False):
             h.setFormatter(fmt)
         log.debug("debug level logging enabled")
     return log
+
+def load_config(config_file):
+    """
+    NOTE: since this returns a dict of config values, it's conceivable that code
+    could change these config values. DO NOT DO THIS!
+    """
+    config = ConfigParser.ConfigParser()
+    # otherwise the config parser lowercases setting names
+    config.optionxform = str
+    config.read(config_file)
+    items = []
+    for k, v in config.items('adsdata'):
+        if isinstance(v, str) and v.isdigit():
+            items.append((k,int(v)))
+        else:
+            items.append((k,v))
+    items.append(('collections', dict(config.items('collections'))))
+    return dict(items)
 
 def commandList():
     """
@@ -50,15 +73,13 @@ def mongo_uri(host, port, db=None, user=None, passwd=None):
         uri = "mongodb://%s:%d" % (host, port)
     return uri
 
-def get_session(**kwargs):
-    from config import config
+def get_session(config, **kwargs):
     from session import DataSession
-    uri = mongo_uri(config.MONGO_HOST, config.MONGO_PORT, 
-                    db=config.MONGO_DATABASE, user=config.MONGO_USER, passwd=config.MONGO_PASSWORD)
-    return DataSession(config.MONGO_DATABASE, uri, 
-                       config.MONGO_DOCS_COLLECTION, 
-                       ref_fields=config.MONGO_DOCS_DEREF_FIELDS,
-                       **kwargs) 
+    uri = mongo_uri(config['ADSDATA_MONGO_HOST'], config['ADSDATA_MONGO_PORT'], 
+                    db=config['ADSDATA_MONGO_DATABASE'], 
+                    user=config['ADSDATA_MONGO_USER'], 
+                    passwd=config['ADSDATA_MONGO_PASSWORD'])
+    return DataSession(config['ADSDATA_MONGO_DATABASE'], uri) 
 
 def map_reduce_listify(session, source, target_collection_name, group_key, value_field):
     """

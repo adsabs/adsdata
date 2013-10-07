@@ -15,18 +15,17 @@ from multiprocessing import Process, JoinableQueue, Queue, cpu_count
 from optparse import OptionParser
 from pymongo import MongoClient
 
-from config import config
 from adsdata import utils, models
 
 commands = utils.commandList()
 
 class Worker(Process):
 
-    def __init__(self, task_queue, deletes_queue, authority):
+    def __init__(self, task_queue, deletes_queue, config, authority):
         Process.__init__(self)
         self.task_queue = task_queue
         self.deletes_queue = deletes_queue
-        session = utils.get_session()
+        session = utils.get_session(config)
         self.authority_collection = session.get_collection(authority)
 
     def run(self):
@@ -52,11 +51,11 @@ class Worker(Process):
                 self.task_queue.task_done()
                 log.info("task queue size: %d" % self.task_queue.qsize())
 
-def find_deletions(opts):
+def find_deletions(opts, config):
     
     log = logging.getLogger()
     
-    session = utils.get_session()
+    session = utils.get_session(config)
     subject_collection = session.get_collection(opts.subject)
     bibiter = itertools.imap(lambda x: x['_id'], subject_collection.find({}, {'_id': 1}))
     
@@ -68,7 +67,7 @@ def find_deletions(opts):
 
     # start up our builder threads
     log.debug("Creating %d Worker processes" % opts.threads)
-    procs = [ Worker(tasks, deletes, opts.authority) for i in xrange(opts.threads)]
+    procs = [ Worker(tasks, deletes, config, opts.authority) for i in xrange(opts.threads)]
     for p in procs:
         p.start()
 
@@ -92,21 +91,22 @@ def find_deletions(opts):
             yield deletes.get_nowait()
         except QueueEmpty:
             break
+
 @commands
-def delete(opts):
+def delete(opts, config):
     log.info("Deleting all records from %s that do not appear in %s" % (opts.subject, opts.authority))
-    session = utils.get_session()
+    session = utils.get_session(config)
     subject_collection = session.get_collection(opts.subject)
     count = 0
-    for count, bib in enumerate(find_deletions(opts), 1):
+    for count, bib in enumerate(find_deletions(opts, config), 1):
         log.info("deleting %s" % bib)
         subject_collection.remove({'_id': bib})
     log.info("done. %d items deleted" % count)
 
 @commands
-def list(opts):
+def list(opts, config):
     log.info("Listing all records from %s that do not appear in %s" % (opts.subject, opts.authority))
-    for bib in find_deletions(opts):
+    for bib in find_deletions(opts, config):
         print bib
 
 if __name__ == '__main__':
@@ -124,19 +124,23 @@ if __name__ == '__main__':
     op.add_option('-v','--verbose', dest="verbose", action="store_true", default=False)
     opts, args = op.parse_args() 
     
-    logfile = "%s/%s" % (config.LOG_DIR, os.path.basename(__file__))
-    log = utils.init_logging(logfile, opts.verbose, opts.debug)
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    config = utils.load_config(os.path.join(base_dir, 'adsdata.cfg'))
+
+    log = utils.init_logging(base_dir, opts.verbose, opts.debug)
+    if opts.debug:
+        log.setLevel(logging.DEBUG)
     
     try:
         cmd = args.pop()
-        assert cmd in commands
+        assert cmd in commands.map
     except (IndexError,AssertionError):
         op.error("missing or invalid command")    
         
     start_cpu = time.clock()
     start_real = time.time()        
     
-    commands.map[cmd](opts)
+    commands.map[cmd](opts, config)
     
     end_cpu = time.clock()
     end_real = time.time()
