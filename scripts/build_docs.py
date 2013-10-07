@@ -15,7 +15,7 @@ import itertools
 from optparse import OptionParser
 from multiprocessing import Process, JoinableQueue, cpu_count
 
-from adsdata import utils
+from adsdata import utils, models
 from adsdata.exceptions import *
 
 commands = utils.commandList()
@@ -60,7 +60,7 @@ def get_bibcodes(opts):
         bibcodes = itertools.imap(lambda x: x.strip(), stream)
     elif opts.source_model:
         try:
-            source_model = eval('adsdata.models.' + opts.source_model)
+            source_model = eval('models.' + opts.source_model)
             assert hasattr(source_model, 'class_name')
         except AssertionError, e:
             raise Exception("Invalid source_model value: %s" % e)
