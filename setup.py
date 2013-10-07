@@ -7,9 +7,11 @@ from pip.req import parse_requirements
 install_reqs = parse_requirements('./requirements.txt')
 reqs = [str(ir.req) for ir in install_reqs]
 
+from adsdata import __version__
+
 setup(
     name = 'adsdata',
-    version = '0.1',
+    version = __version__,
     description = 'ADS metadata management',
     long_description = open('README.md').read(), 
     install_requires = reqs,

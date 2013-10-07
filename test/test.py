@@ -25,7 +25,6 @@ from bson import DBRef
 from datetime import datetime, timedelta
 from mongoalchemy import fields
 
-from config import config
 from adsdata import models, utils
 from adsdata.session import *
 
@@ -50,9 +49,8 @@ class AggregatedCollection(models.DataFileCollection):
     aggregated = True
     field_order = [foo, bar]
     
-def load_test_data():
+def load_test_data(config):
     import subprocess
-    from config import config
     test_data_dir = os.path.join(os.path.dirname(__file__), 'demo_data')
     for f in os.listdir(test_data_dir):
         abs_path = os.path.join(test_data_dir, f)
@@ -61,9 +59,9 @@ def load_test_data():
             subprocess.call(["mongoimport", "--drop",
                              "-d", "test", 
                              "-c", collection_name, 
-                             "-h", "%s:%d" % (config.MONGO_HOST, config.MONGO_PORT),
-                             "-u", config.MONGO_USER,
-                             "-p", config.MONGO_PASSWORD,
+                             "-h", "%s:%d" % (config['ADSDATA_MONGO_HOST'], config['ADSDATA_MONGO_PORT']),
+                             "-u", config['ADSDATA_MONGO_USER'],
+                             "-p", config['ADSDATA_MONGO_PASSWORD'],
                              abs_path], stdout=fnull)       
             
 class AdsdataTestCase(unittest.TestCase):
@@ -75,13 +73,16 @@ class AdsdataTestCase(unittest.TestCase):
         self.boxclient['admin'].add_user('foo','bar')
         self.boxclient['admin'].authenticate('foo','bar')
         self.boxclient['test'].add_user('test','test')
-        config.MONGO_DATABASE = 'test'
-        config.MONGO_HOST = 'localhost'
-        config.MONGO_PORT = self.box.port
-        config.MONGO_USER = 'test'
-        config.MONGO_PASSWORD = 'test'
-        self.session = utils.get_session()
-        load_test_data()
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        config = utils.load_config(os.path.join(base_dir, 'adsdata.cfg'))
+        config['ADSDATA_MONGO_DATABASE'] = 'test'
+        config['ADSDATA_MONGO_HOST'] = 'localhost'
+        config['ADSDATA_MONGO_PORT'] = self.box.port
+        config['ADSDATA_MONGO_USER'] = 'test'
+        config['ADSDATA_MONGO_PASSWORD'] = 'test'
+        self.config = config
+        self.session = utils.get_session(config)
+        load_test_data(self.config)
         
     def tearDown(self):
         self.box.stop()
@@ -98,31 +99,27 @@ class TestDataCollection(AdsdataTestCase):
         
     def test_last_modified(self):
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         tmp_modified = datetime.fromtimestamp(os.stat(tmp.name)[ST_MTIME]).replace(tzinfo=pytz.utc)
-        last_modified = BasicCollection.last_modified()
-        del config.MONGO_DATA_COLLECTIONS['adsdata_test']
+        last_modified = BasicCollection.last_modified(tmp.name)
         self.assertTrue(last_modified == tmp_modified, 'last_modfied() returns correct mod time')
         
     def test_needs_sync(self):
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
-        self.assertTrue(BasicCollection.needs_sync(self.session), 'No DLT == needs sync')
+        self.assertTrue(BasicCollection.needs_sync(self.session, tmp.name), 'No DLT == needs sync')
         
         # sleep for a moment to ensure new last synced time is older than temp file
         sleep(0.1) 
         now = datetime.now()
         dlt = models.DataLoadTime(collection='adsdata_test', last_synced=now)
         self.session.insert(dlt)
-        self.assertFalse(BasicCollection.needs_sync(self.session), 'DLT sync time > file mod time == does not need sync')
+        self.assertFalse(BasicCollection.needs_sync(self.session, tmp.name), 'DLT sync time > file mod time == does not need sync')
         
         dlt.last_synced = now - timedelta(days=1)
         self.session.update(dlt)
-        self.assertTrue(BasicCollection.needs_sync(self.session), 'DLT sync time < file mod time == needs sync')
+        self.assertTrue(BasicCollection.needs_sync(self.session, tmp.name), 'DLT sync time < file mod time == needs sync')
         
     def test_load_data(self):
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         for pair in zip("abcd","1234"):
             print >>tmp, "%s\t%s" % pair
             
@@ -132,7 +129,7 @@ class TestDataCollection(AdsdataTestCase):
         
         tmp.flush()
         self.assertTrue(BasicCollection.last_synced(self.session) is None)
-        BasicCollection.load_data(self.session)
+        BasicCollection.load_data(self.session, tmp.name)
         self.assertTrue(type(BasicCollection.last_synced(self.session)) == datetime, 'load data creates DLT entry')
         self.assertEqual(self.session.query(BasicCollection).count(), 6, 'all records loaded')
         
@@ -143,32 +140,29 @@ class TestDataCollection(AdsdataTestCase):
         
     def test_restkey(self):
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         for triplet in zip("abcd","1234","wxyz"):
             print >>tmp, "%s\t%s\t%s" % triplet
         tmp.flush()
         BasicCollection.restkey = "unwanted"
-        BasicCollection.load_data(self.session, source_file=tmp.name)
+        BasicCollection.load_data(self.session, tmp.name)
         entry_a = self.session.query(BasicCollection).filter(BasicCollection.foo == 'a').first()
         self.assertFalse(hasattr(entry_a, 'baz'))
         
     def test_named_restkey(self):
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         for quad in zip("abcd","1234","wxyz", "5678"):
             print >>tmp, "%s\t%s\t%s\t%s" % quad
         tmp.flush()
-        NamedRestKeyCollection.load_data(self.session, source_file=tmp.name)
+        NamedRestKeyCollection.load_data(self.session, tmp.name)
         entry_a = self.session.query(NamedRestKeyCollection).filter(NamedRestKeyCollection.foo == 'a').first()
         self.assertEqual(entry_a.baz, ["w", "5"])
     
     def test_load_data_aggregated(self):
         tmp = tempfile.NamedTemporaryFile()
-        config.MONGO_DATA_COLLECTIONS['adsdata_test'] = tmp.name
         for pair in zip("aabbccdd","12345678"):
             print >>tmp, "%s\t%s" % pair
         tmp.flush()
-        AggregatedCollection.load_data(self.session)
+        AggregatedCollection.load_data(self.session, tmp.name)
         self.assertEqual(self.session.query(AggregatedCollection).count(), 0, 'no records loaded in the actual collection')
         self.assertEqual(self.session.get_collection('adsdata_test_load').count(), 8, 'all records loaded in "_load" collection')
         
@@ -221,7 +215,7 @@ class TestDataCollection(AdsdataTestCase):
 class TestDocs(AdsdataTestCase):        
     
     def test_generate_docs(self):
-        load_test_data()
+        load_test_data(self.config)
         self.maxDiff = None
         doc = self.session.generate_doc("1874MNRAS..34..279L")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '1874MNRAS..34..279L'),
@@ -263,7 +257,7 @@ class TestDocs(AdsdataTestCase):
                                'refereed': True})
         
     def test_build_docs(self):
-        load_test_data()
+        load_test_data(self.config)
         self.session.store_doc(self.session.generate_doc("2004PhRvD..70d6004F"))
         doc = self.session.get_doc("2004PhRvD..70d6004F", manipulate=False)
         self.assertTrue(isinstance(doc['ack'], DBRef))
@@ -275,7 +269,7 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(doc['refereed'], True)
     
     def test_dt_manipulator(self):
-        self.session = utils.get_session(inc_manipulators=False)
+        self.session = utils.get_session(self.config, inc_manipulators=False)
         self.session.add_manipulator(DatetimeInjector('ads_test'))
         collection = self.session.get_collection('ads_test')
         collection.insert({"foo": 1})
@@ -292,7 +286,7 @@ class TestDocs(AdsdataTestCase):
         self.assertNotEqual(dt, entry['_dt'])
         
     def test_digest_manipulator(self):
-        self.session = utils.get_session(inc_manipulators=False)
+        self.session = utils.get_session(self.config, inc_manipulators=False)
         self.session.add_manipulator(DigestInjector('ads_test'))
         collection = self.session.get_collection('ads_test')
         collection.insert({"foo": 1})
@@ -305,7 +299,7 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(entry['_digest'], digest)
         
     def test_dereference_manipulator(self):
-        self.session = utils.get_session(inc_manipulators=False)
+        self.session = utils.get_session(self.config, inc_manipulators=False)
         collection_a = self.session.get_collection('test_a')
         collection_b = self.session.get_collection('test_b')
         collection_a.insert({"_id": 1, "foo": "bar"})
@@ -316,7 +310,7 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(doc['foo'], 'bar')
         
     def test_fetch_doc(self):
-        load_test_data()
+        load_test_data(self.config)
         doc = self.session.get_doc("2012ASPC..461..837L")
         self.assertIsNotNone(doc)
         # _dt datestamp should be removed by manipulator
@@ -336,7 +330,7 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(stored_doc['_digest'], digest)
         
     def test_modify_existing_doc(self):
-        load_test_data()
+        load_test_data(self.config)
         existing_doc = self.session.get_doc("1999abcd.1234..111Q", manipulate=False)
         existing_digest = existing_doc['_digest']
         existing_dt = existing_doc['_dt']

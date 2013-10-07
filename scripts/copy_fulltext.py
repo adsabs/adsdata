@@ -16,8 +16,7 @@ from datetime import timedelta,datetime
 from optparse import OptionParser
 from pymongo import MongoClient
 
-from config import config
-from adsdata import utils,models
+from adsdata import utils, models
 
 def uri2collection(uri):
     host, db, collection = uri.split("/")
@@ -26,11 +25,11 @@ def uri2collection(uri):
     
 class Copier(Process):
 
-    def __init__(self, task_queue, opts):
+    def __init__(self, task_queue, opts, config):
         Process.__init__(self)
         self.task_queue = task_queue
         self.from_collection = MongoClient(host=opts.from_mongo)['solr4ads']['docs']
-        session = utils.get_session()
+        session = utils.get_session(config)
         self.to_collection = session.get_collection('fulltext')
         self.wanted = dict([(x,1) for x in opts.fields.split(',')])
 
@@ -52,11 +51,11 @@ class Copier(Process):
             except:
                 raise
 
-def main(opts):
+def main(opts, config):
     
     log = logging.getLogger()
     
-    session = utils.get_session()
+    session = utils.get_session(config)
     to_collection = session.get_collection('fulltext')
     to_collection.drop()
     
@@ -69,7 +68,7 @@ def main(opts):
 
     # start up our builder threads
     log.debug("Creating %d Copier processes" % opts.threads)
-    procs = [ Copier(tasks, opts) for i in xrange(opts.threads)]
+    procs = [ Copier(tasks, opts, config) for i in xrange(opts.threads)]
     for p in procs:
         p.start()
 
@@ -98,13 +97,17 @@ if __name__ == '__main__':
     op.add_option('-v','--verbose', dest="verbose", action="store_true", default=False)
     opts, args = op.parse_args() 
     
-    logfile = "%s/%s" % (config.LOG_DIR, os.path.basename(__file__))
-    log = utils.init_logging(logfile, opts.verbose, opts.debug)
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    config = utils.load_config(os.path.join(base_dir, 'adsdata.cfg'))
+
+    log = utils.init_logging(base_dir, opts.verbose, opts.debug)
+    if opts.debug:
+        log.setLevel(logging.DEBUG)
     
     start_cpu = time.clock()
     start_real = time.time()        
     
-    main(opts)
+    main(opts, config)
     
     end_cpu = time.clock()
     end_real = time.time()

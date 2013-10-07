@@ -14,8 +14,6 @@ from datetime import datetime
 from mongoalchemy import fields
 from mongoalchemy.document import Document, Index
 
-import exceptions as exc
-from config import config
 from adsdata import utils
 
 import logging
@@ -95,22 +93,21 @@ class DataFileCollection(DataCollection):
         return dlt.last_synced
     
     @classmethod
-    def last_modified(cls):
+    def last_modified(cls, data_file):
         collection_name = cls.config_collection_name
-        source_file = cls.get_source_file()
-        log.debug("checking freshness of %s collection vs %s" % (collection_name, source_file))
-        modified = datetime.fromtimestamp(os.stat(source_file)[ST_MTIME]).replace(tzinfo=pytz.utc)
-        log.debug("%s last modified: %s" % (source_file, modified))
+        log.debug("checking freshness of %s collection vs %s" % (collection_name, data_file))
+        modified = datetime.fromtimestamp(os.stat(data_file)[ST_MTIME]).replace(tzinfo=pytz.utc)
+        log.debug("%s last modified: %s" % (data_file, modified))
         return modified
         
     @classmethod
-    def needs_sync(cls, session):
+    def needs_sync(cls, session, data_file):
         """
         compare the modification time of a data source
         to its last_synced time in the data_load_time collection
         """
         collection_name = cls.config_collection_name
-        last_modified = cls.last_modified()
+        last_modified = cls.last_modified(data_file)
         last_synced = cls.last_synced(session)
         
         if not last_synced or last_modified > last_synced:
@@ -121,15 +118,7 @@ class DataFileCollection(DataCollection):
             return False
         
     @classmethod
-    def get_source_file(cls):
-        collection_name = cls.config_collection_name
-        try:
-            return config.MONGO_DATA_COLLECTIONS[collection_name]
-        except:
-            raise exc.ConfigurationError("No source file configured for %s" % collection_name)
-        
-    @classmethod
-    def load_data(cls, session, batch_size=1000, source_file=None, partial=False):
+    def load_data(cls, session, data_file, batch_size=1000, partial=False):
         """
         batch load entries from a data file to the corresponding mongo collection
         """
@@ -143,9 +132,6 @@ class DataFileCollection(DataCollection):
         collection.drop()
         log.debug("loading data into %s" % load_collection_name)
         
-        if not source_file:
-            source_file = cls.get_source_file()
-        
         def get_collection_field_name(field):
             if field.is_id and cls.aggregated:
                 return "load_key"
@@ -153,7 +139,7 @@ class DataFileCollection(DataCollection):
                 return field.db_field
             
         try:
-            fh = open(source_file, 'r')
+            fh = open(data_file, 'r')
         except IOError, e:
             log.error(str(e))
             return

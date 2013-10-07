@@ -17,7 +17,6 @@ from multiprocessing import Process, JoinableQueue, cpu_count
 
 from adsdata import utils
 from adsdata.exceptions import *
-from config import config
 
 commands = utils.commandList()
 
@@ -27,7 +26,7 @@ class Builder(Process):
         Process.__init__(self)
         self.task_queue = task_queue
         self.result_queue = result_queue
-        self.session = utils.get_session()
+        self.session = utils.get_session(config)
         
     def run(self):
         log = logging.getLogger()
@@ -65,7 +64,7 @@ def get_bibcodes(opts):
             assert hasattr(source_model, 'class_name')
         except AssertionError, e:
             raise Exception("Invalid source_model value: %s" % e)
-        session = utils.get_session()
+        session = utils.get_session(config)
         bibcodes = itertools.imap(lambda x: x.bibcode, session.iterate(source_model))
         
     if opts.limit:
@@ -75,7 +74,7 @@ def get_bibcodes(opts):
     
 @commands
 def build_synchronous(opts):
-    session = utils.get_session()
+    session = utils.get_session(config)
     for bib in get_bibcodes(opts):
         doc = session.generate_doc(bib)
         if doc is not None:
@@ -90,7 +89,7 @@ def build(opts):
     
     if opts.remove:
         log.info("Removing existing docs collection")
-        session = utils.get_session()
+        session = utils.get_session(config)
         session.docs.drop()
         
     # start up our builder threads
@@ -138,9 +137,13 @@ if __name__ == "__main__":
         help='capture exec profile in a call graph image', default=False)
     opts, args = op.parse_args() 
     
-    logfile = "%s/%s" % (config.LOG_DIR, os.path.basename(__file__))
-    log = utils.init_logging(logfile, opts.verbose, opts.debug)
-    
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    config = utils.load_config(os.path.join(base_dir, 'adsdata.cfg'))
+
+    log = utils.init_logging(base_dir, opts.verbose, opts.debug)
+    if opts.debug:
+        log.setLevel(logging.DEBUG)
+
     try:
         cmd = args.pop()
         assert cmd in commands.map
