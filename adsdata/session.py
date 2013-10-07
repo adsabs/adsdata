@@ -16,6 +16,8 @@ from datetime import datetime
 from mongoalchemy.session import Session
 from pymongo.son_manipulator import SONManipulator
 
+DOCS_COLLECTION = 'docs'
+MONGO_DOCS_DEREF_FIELDS = [('docs','full'), ('docs','ack')]
 
 class DataSession(object):
     """
@@ -23,23 +25,21 @@ class DataSession(object):
     directly accessing the internal pymongo client and for querying
     the data collections in models.py
     """
-    def __init__(self, db, uri, docs_collection, safe=False, create_ok=False, 
-                 inc_manipulators=True, ref_fields=[]):
+    def __init__(self, db, uri, safe=False, create_ok=False, inc_manipulators=True):
         
         self.malchemy = Session.connect(db, host=uri, timezone=pytz.utc)
         self.create_ok = create_ok
         self.db = self.malchemy.db
-        self.docs = self.db[docs_collection]
+        self.docs = self.db[DOCS_COLLECTION]
         self.docs.ensure_index('_digest')
         self.pymongo = self.db.connection
         if safe:
             self.pymongo.db.write_concern = {'w': 1, 'j': True}
         if inc_manipulators:
             # NOTE: order is important here
-            self.add_manipulator(DigestInjector(docs_collection))
-            self.add_manipulator(DatetimeInjector(docs_collection))
-            if len(ref_fields):
-                self.add_manipulator(DereferenceManipulator(ref_fields))
+            self.add_manipulator(DigestInjector(DOCS_COLLECTION))
+            self.add_manipulator(DatetimeInjector(DOCS_COLLECTION))
+            self.add_manipulator(DereferenceManipulator(MONGO_DOCS_DEREF_FIELDS))
     
     def add_manipulator(self, manipulator):
         self.db.add_son_manipulator(manipulator)
