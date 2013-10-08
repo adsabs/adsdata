@@ -49,7 +49,7 @@ class AggregatedCollection(models.DataFileCollection):
     aggregated = True
     field_order = [foo, bar]
     
-def load_test_data(config):
+def load_data(config):
     import subprocess
     test_data_dir = os.path.join(os.path.dirname(__file__), 'demo_data')
     for f in os.listdir(test_data_dir):
@@ -82,7 +82,7 @@ class AdsdataTestCase(unittest.TestCase):
         config['ADSDATA_MONGO_PASSWORD'] = 'test'
         self.config = config
         self.session = utils.get_session(config)
-        load_test_data(self.config)
+        load_data(self.config)
         
     def tearDown(self):
         self.box.stop()
@@ -215,7 +215,7 @@ class TestDataCollection(AdsdataTestCase):
 class TestDocs(AdsdataTestCase):        
     
     def test_generate_docs(self):
-        load_test_data(self.config)
+        load_data(self.config)
         self.maxDiff = None
         doc = self.session.generate_doc("1874MNRAS..34..279L")
         self.assertEqual(doc, {'ack': DBRef('fulltext', '1874MNRAS..34..279L'),
@@ -257,7 +257,7 @@ class TestDocs(AdsdataTestCase):
                                'refereed': True})
         
     def test_build_docs(self):
-        load_test_data(self.config)
+        load_data(self.config)
         self.session.store_doc(self.session.generate_doc("2004PhRvD..70d6004F"))
         doc = self.session.get_doc("2004PhRvD..70d6004F", manipulate=False)
         self.assertTrue(isinstance(doc['ack'], DBRef))
@@ -310,7 +310,7 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(doc['foo'], 'bar')
         
     def test_fetch_doc(self):
-        load_test_data(self.config)
+        load_data(self.config)
         doc = self.session.get_doc("2012ASPC..461..837L")
         self.assertIsNotNone(doc)
         # _dt datestamp should be removed by manipulator
@@ -330,7 +330,7 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(stored_doc['_digest'], digest)
         
     def test_modify_existing_doc(self):
-        load_test_data(self.config)
+        load_data(self.config)
         existing_doc = self.session.get_doc("1999abcd.1234..111Q", manipulate=False)
         existing_digest = existing_doc['_digest']
         existing_dt = existing_doc['_dt']
