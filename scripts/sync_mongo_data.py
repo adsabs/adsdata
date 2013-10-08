@@ -14,7 +14,8 @@ from adsdata.session import DataSession
 
 commands = utils.commandList()
     
-def load_data(model_class, data_file, batch_size):
+def load_data(update_args):
+    model_class, data_file, batch_size = update_args
     log = logging.getLogger()
     log.debug("thread '%s' working on %s" % (current_process().name, model_class))
     session = utils.get_session(config)
@@ -39,19 +40,19 @@ def sync(opts, config):
         
     session = utils.get_session(config)
     
-    updates = []
+    update_args = []
     for model_class, data_file in get_models(opts, config):
         if model_class.needs_sync(session, data_file) or opts.force:
             log.info("%s needs synching" % model_class.config_collection_name)
-            updates.append((model_class, data_file, config['ADSDATA_MONGO_DATA_LOAD_BATCH_SIZE']))
+            update_args.append((model_class, data_file, config['ADSDATA_MONGO_DATA_LOAD_BATCH_SIZE']))
         else:
             log.info("%s does not need syncing" % model_class.config_collection_name)
     if opts.threads > 0:
         p = Pool(opts.threads)
-        p.map(load_data, updates)
+        p.map(load_data, update_args)
     else:
-        for cls, data_file, batch_size in updates:
-            load_data(cls, data_file, batch_size)
+        for cls, data_file, batch_size in update_args:
+            load_data((cls, data_file, batch_size))
         
 @commands
 def status(opts, config):
