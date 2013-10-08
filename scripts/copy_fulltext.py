@@ -2,6 +2,10 @@
 Created on Mar 12, 2013
 
 @author: jluker
+
+This script is intended as a transitional process that will copy fulltext content
+from the old fulltext pipeline mongo instance on adszee to the new adsdata
+mongo instance on adsx.
 '''
 import os
 import site
