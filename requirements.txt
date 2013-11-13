@@ -1,3 +1,4 @@
+pip>=1.4.1
 SQLAlchemy>=0.7.3
 MongoAlchemy>=0.13.3
 pytz
