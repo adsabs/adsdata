@@ -12,7 +12,7 @@ from bson import DBRef
 from stat import ST_MTIME
 from datetime import datetime
 from mongoalchemy import fields
-from mongoalchemy.document import Document, Index
+from mongoalchemy.document import Document
 
 from adsdata import utils
 
@@ -324,13 +324,16 @@ class DocMetrics(DataFileCollection, DocsDataCollection):
     boost = fields.FloatField(default=0.0)
     citation_count = fields.IntField(default=0)
     read_count = fields.IntField(default=0)
+    norm_cites = fields.IntField(default=0)
     
     config_collection_name = 'docmetrics'
-    field_order = [bibcode,boost,citation_count,read_count]
-    docs_fields = [boost, citation_count, read_count]
+    field_order = [bibcode,boost,citation_count,read_count,norm_cites]
+    docs_fields = [boost, citation_count, read_count, norm_cites]
     
     def __str__(self):
         return "DocMetrics(%s): %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
+
+# add Simbad Object ids
     
 class Accno(DataFileCollection):
 
