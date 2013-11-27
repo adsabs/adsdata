@@ -224,6 +224,7 @@ class TestDocs(AdsdataTestCase):
                                'citation_count': 0,
                                'full': DBRef('fulltext', '1874MNRAS..34..279L'),
                                'read_count': 4,
+                               'norm_cites': 5,
                                'readers': [u'4f43e9286f', u'5108e7c0a8'],
                                'reads': [0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 0, 1, 2, 0, 1, 0, 5, 3],
                                'refereed': True})
@@ -241,6 +242,7 @@ class TestDocs(AdsdataTestCase):
                                'citation_count': 0,
                                'full': DBRef('fulltext', '1899Obs....22..253.'),
                                'read_count': 2,
+                               'norm_cites': 11,
                                'reads': [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0],
                                'refereed': True})
         doc = self.session.generate_doc("1995MNRAS.274...31W")
@@ -254,6 +256,14 @@ class TestDocs(AdsdataTestCase):
                                '_id': '2002JPhA...35.8109K',
                                'full': DBRef('fulltext', '2002JPhA...35.8109K'),
                                'readers': [u'X0cae078a6', u'X12049c5ae'],
+                               'refereed': True})
+        # simbad objects -- can't get it to run?
+        doc = self.session.generate_doc("2012AJ....144...41M")
+        self.assertEqual(doc, {'ack': DBRef('fulltext', '2012AJ....144...41M'),
+                               '_id': '2012AJ....144...41M',
+                               'full': DBRef('fulltext', '2012AJ....144...41M'),
+                               'readers': [ u"436f75a55a", u"46272c410e", u"490ab747dc", u"4939448062", u"4b5a08bbfe", u"4c6ba8aa3a", u"4c8b74d412", u"4e4e04ba43", u"4f062ccce1", u"501a251579", u"5027566670", u"50a4fe3774", u"50c080fcbf", u"50c3afbc0d", u"50f0d5b2b4", u"51008459eb", u"X058634054", u"X0655ebd3f", u"X0ae824e1a", u"X1b0df8aff", u"X1eef54acb", u"X21917fa62", u"X24bfec4a0", u"X25d68b840", u"X2a33f071f", u"X781029d71", u"X7da609b3b", u"X83d0b59d7", u"Xd118f4129", u"Xd727d89bb", u"Xe8ee1dc61", u"Xe8fe06b10" ],
+                               'simbad_object_ids': [1514745, 1514748, 1514750, 1514751, 1514755, 1515364, 1519004, 1519087, 1519992, 1519997, 1520006, 1520008, 1520023, 1520024, 1520029, 1520032, 1520033, 1520034, 1520038, 1520139, 1520357, 1520371, 1520374, 1520381, 1520391, 1520395, 1520402, 1520404, 1520406, 1520413, 1520419, 1521360, 1521374, 1522778, 1575544, 3133169, 3754378, 5228155, 5228162, 5228174],
                                'refereed': True})
         
     def test_build_docs(self):
