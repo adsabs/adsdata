@@ -25,7 +25,7 @@ class DataSession(object):
     directly accessing the internal pymongo client and for querying
     the data collections in models.py
     """
-    def __init__(self, db, uri, safe=False, create_ok=False, inc_manipulators=True):
+    def __init__(self, db, uri, create_ok=False, inc_manipulators=True):
         
         self.malchemy = Session.connect(db, host=uri, timezone=pytz.utc)
         self.create_ok = create_ok
@@ -33,8 +33,6 @@ class DataSession(object):
         self.docs = self.db[DOCS_COLLECTION]
         self.docs.ensure_index('_digest')
         self.pymongo = self.db.connection
-        if safe:
-            self.pymongo.db.write_concern = {'w': 1, 'j': True}
         if inc_manipulators:
             # NOTE: order is important here
             self.add_manipulator(DigestInjector(DOCS_COLLECTION))

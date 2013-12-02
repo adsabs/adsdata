@@ -11,6 +11,7 @@ import inspect
 from bson import DBRef
 from stat import ST_MTIME
 from datetime import datetime
+import pymongo
 from mongoalchemy import fields
 from mongoalchemy.document import Document, Index
 
@@ -163,6 +164,13 @@ class DataFileCollection(DataCollection):
         
         batch = []
         batch_num = 1
+        
+        def insert_batch(batch):
+            try:
+                collection.insert(batch, continue_on_error=True)
+            except pymongo.errors.DuplicateKeyError, e:
+                log.error(e)
+            
         while True:
             try:
                 record = reader.next()
@@ -174,13 +182,13 @@ class DataFileCollection(DataCollection):
             batch.append(record)
             if len(batch) >= batch_size:
                 log.debug("inserting batch %d into %s", batch_num, collection.name)
-                collection.insert(batch)
+                insert_batch(batch)
                 batch = []
                 batch_num += 1
 
         if len(batch):
             log.debug("inserting final batch into %s" % collection.name)
-            collection.insert(batch)
+            insert_batch(batch)
 
     @classmethod
     def coerce_types(cls, record):

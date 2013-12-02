@@ -43,7 +43,6 @@ class FlaskAdsdata(object):
         config.setdefault("ADSDATA_MONGO_DATABASE", 'adsdata')
         config.setdefault("ADSDATA_MONGO_HOST", 'localhost')
         config.setdefault("ADSDATA_MONGO_PORT", 27017)
-        config.setdefault("ADSDATA_MONGO_SAFE", True)
         config.setdefault("ADSDATA_MONGO_USER", "adsdata")
         config.setdefault("ADSDATA_MONGO_PASSWORD", None)
 
