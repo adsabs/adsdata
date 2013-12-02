@@ -212,6 +212,16 @@ class TestDataCollection(AdsdataTestCase):
         self.assertEqual(target.count(), 3)
         self.assertEqual(target.find_one({"_id": "a"}), {"_id": "a", "bar": ["z","y"]})
         
+    def test_load_data_duplicate_key(self):
+        tmp = tempfile.NamedTemporaryFile()
+        for pair in zip("abcdd","12345"):
+            print >>tmp, "%s\t%s" % pair
+            
+        tmp.flush()
+        BasicCollection.load_data(self.session, tmp.name)
+        # duplicate record should quietly fail
+        self.assertEqual(self.session.query(BasicCollection).count(), 4)
+        
 class TestDocs(AdsdataTestCase):        
     
     def test_generate_docs(self):
