@@ -10,14 +10,11 @@ BASEPATH=`dirname $SCRIPTPATH`
 FROM_MONGO="mongodb://adszee:27017/solr4ads"
 LOCKFILE="$SCRIPTPATH/.build_sync.lock"
 
-if [ -f $LOCKFILE ]
-then
-    echo "Lock file exists. Aborting."
-    exit 1
-else
-    echo "Creating lockfile"
-    touch $LOCKFILE
-fi
+# save PID in lockfile
+/proj/ads/soft/bin/mklock -d $SCRIPTPATH .adsdata.lock $$ || {
+	echo "$SCRIPT: cannot create lock file, aborting" 1>&2
+	exit 1
+}
 
 echo "#############" `date` ": synching data sources #################"
 python $BASEPATH/scripts/sync_mongo_data.py "$@" sync
@@ -31,6 +28,5 @@ python $BASEPATH/scripts/build_docs.py "$@" build
 echo "#############" `date` ": processing deletions ###################"
 python $BASEPATH/scripts/deletions.py "$@" delete
 
-echo "Removing lockfile"
-rm -f $LOCKFILE
+/proj/ads/soft/bin/rmlock -d $SCRIPTPATH .adsdata.lock $$
 
