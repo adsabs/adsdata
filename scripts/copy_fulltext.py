@@ -8,8 +8,8 @@ from the old fulltext pipeline mongo instance on adszee to the new adsdata
 mongo instance on adsx.
 '''
 import os
-import site
-site.addsitedir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import re
 import time
