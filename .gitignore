@@ -1,1 +1,8 @@
+# eclipse stuff
+.project
+.pydevproject
+.settings/
+
+adsdata.cfg
 local_config.py
+test/demo_collections/*.tsv

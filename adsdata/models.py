@@ -340,7 +340,7 @@ class DocMetrics(DataFileCollection, DocsDataCollection):
         return "DocMetrics(%s): %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
 
 # add Simbad Object ids
-class SimbadObjectIDs(DataFileCollection):
+class SimbadObjectIDs(DataFileCollection, DocsDataCollection):
     
     bibcode = fields.StringField(_id=True)
     simbad_object_ids = fields.ListField(fields.IntField())
@@ -348,6 +348,7 @@ class SimbadObjectIDs(DataFileCollection):
     aggregated = True
     config_collection_name = 'simbad_object_ids'
     field_order = [bibcode, simbad_object_ids]
+    docs_fields = [simbad_object_ids]
     
     def __str__(self):
         return "Simbad_objs(%s): [%s]" % (self.bibcode, self.simbad_object_ids)
