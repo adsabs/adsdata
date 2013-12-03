@@ -13,7 +13,7 @@ from stat import ST_MTIME
 from datetime import datetime
 import pymongo
 from mongoalchemy import fields
-from mongoalchemy.document import Document, Index
+from mongoalchemy.document import Document
 
 from adsdata import utils
 
@@ -130,6 +130,8 @@ class DataFileCollection(DataCollection):
         else:
             load_collection_name = collection_name
         collection = session.get_collection(load_collection_name)
+        # given that the load time may be quite long, shouldn't we create an updated
+        # collection then swap it in place rather than dropping it before loading?
         collection.drop()
         log.debug("loading data into %s" % load_collection_name)
         
@@ -154,6 +156,10 @@ class DataFileCollection(DataCollection):
 
         cls.post_load_data(session, collection)
         
+        # shouldn't the last_synced time be computed at the beginning of the load process
+        # (right after the data is read from the tsv file)?  Otherwise an update made to
+        # the source file while we are building and post-processing the collection but
+        # before we update the data_load_time entry will not trigger a new update here
         dlt = DataLoadTime(collection=collection_name, last_synced=datetime.utcnow().replace(tzinfo=pytz.utc))
         session.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
         log.debug("%s load time updated to %s" % (collection_name, str(dlt.last_synced)))
@@ -332,14 +338,35 @@ class DocMetrics(DataFileCollection, DocsDataCollection):
     boost = fields.FloatField(default=0.0)
     citation_count = fields.IntField(default=0)
     read_count = fields.IntField(default=0)
+    norm_cites = fields.IntField(default=0)
     
     config_collection_name = 'docmetrics'
-    field_order = [bibcode,boost,citation_count,read_count]
-    docs_fields = [boost, citation_count, read_count]
+    field_order = [bibcode,boost,citation_count,read_count,norm_cites]
+    docs_fields = [boost, citation_count, read_count, norm_cites]
     
     def __str__(self):
         return "DocMetrics(%s): %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
+
+# add Simbad Object ids
+class SimbadObjectIDs(DataFileCollection, DocsDataCollection):
     
+    bibcode = fields.StringField(_id=True)
+    simbad_object_ids = fields.ListField(fields.IntField())
+    
+    aggregated = True
+    config_collection_name = 'simbad_object_ids'
+    field_order = [bibcode, simbad_object_ids]
+    docs_fields = [simbad_object_ids]
+    
+    def __str__(self):
+        return "Simbad_objs(%s): [%s]" % (self.bibcode, self.simbad_object_ids)
+    
+    @classmethod
+    def post_load_data(cls, session, source_collection):
+        target_collection_name = cls.config_collection_name
+        utils.map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'simbad_object_ids')
+    
+
 class Accno(DataFileCollection):
 
     bibcode = fields.StringField(_id=True)

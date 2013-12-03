@@ -1,18 +1,18 @@
-{ "_id" : "1830MNRAS...1..153.", "citation_count" : 0, "read_count" : 6, "boost" : 0.203724855973738 }
-{ "_id" : "1842MNRAS...5..155.", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921 }
-{ "_id" : "1845MNRAS...6..204F", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921 }
-{ "_id" : "1848MNRAS...8..216.", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921 }
-{ "_id" : "1874MNRAS..34..279L", "citation_count" : 0, "read_count" : 4, "boost" : 0.168498276792733 }
-{ "_id" : "1883Obs.....6..189W", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921 }
-{ "_id" : "1887MNRAS..47..267G", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921 }
-{ "_id" : "1890AJ.....10...85Y", "citation_count" : 1, "read_count" : 0, "boost" : 0.0725682578903921 }
-{ "_id" : "1893PA......1..257U", "citation_count" : 0, "read_count" : 2, "boost" : 0.115017967498934 }
-{ "_id" : "1897PhRvI...4..480W", "citation_count" : 1, "read_count" : 0, "boost" : 0.0725682578903921 }
-{ "_id" : "1899Obs....22..253.", "citation_count" : 0, "read_count" : 2, "boost" : 0.115017967498934 }
-{ "_id" : "1900PGro....7D...1K", "citation_count" : 0, "read_count" : 7, "boost" : 0.217704773671176 }
-{ "_id" : "1902ApJ....15..235R", "citation_count" : 3, "read_count" : 4, "boost" : 0.217704773671176 }
-{ "_id" : "1905AN....170...15W", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921 }
-{ "_id" : "1906C&T....27..558.", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921 }
-{ "_id" : "1911PA.....19..524W", "citation_count" : 1, "read_count" : 1, "boost" : 0.115017967498934 }
-{ "_id" : "1913C&T....34...11V", "citation_count" : 0, "read_count" : 3, "boost" : 0.145136515780784 }
-{ "_id" : "1915ApJ....41..116A", "citation_count" : 1, "read_count" : 2, "boost" : 0.145136515780784 }
+{ "_id" : "1830MNRAS...1..153.", "citation_count" : 0, "read_count" : 6, "boost" : 0.203724855973738, "norm_cites": 1 }
+{ "_id" : "1842MNRAS...5..155.", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921, "norm_cites": 2 }
+{ "_id" : "1845MNRAS...6..204F", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921, "norm_cites": 3 }
+{ "_id" : "1848MNRAS...8..216.", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921, "norm_cites": 4 }
+{ "_id" : "1874MNRAS..34..279L", "citation_count" : 0, "read_count" : 4, "boost" : 0.168498276792733, "norm_cites": 5 }
+{ "_id" : "1883Obs.....6..189W", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921, "norm_cites": 6 }
+{ "_id" : "1887MNRAS..47..267G", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921, "norm_cites": 7 }
+{ "_id" : "1890AJ.....10...85Y", "citation_count" : 1, "read_count" : 0, "boost" : 0.0725682578903921, "norm_cites": 8 }
+{ "_id" : "1893PA......1..257U", "citation_count" : 0, "read_count" : 2, "boost" : 0.115017967498934, "norm_cites": 9 }
+{ "_id" : "1897PhRvI...4..480W", "citation_count" : 1, "read_count" : 0, "boost" : 0.0725682578903921, "norm_cites": 10 }
+{ "_id" : "1899Obs....22..253.", "citation_count" : 0, "read_count" : 2, "boost" : 0.115017967498934, "norm_cites": 11 }
+{ "_id" : "1900PGro....7D...1K", "citation_count" : 0, "read_count" : 7, "boost" : 0.217704773671176, "norm_cites": 12 }
+{ "_id" : "1902ApJ....15..235R", "citation_count" : 3, "read_count" : 4, "boost" : 0.217704773671176, "norm_cites": 13 }
+{ "_id" : "1905AN....170...15W", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921, "norm_cites": 14 }
+{ "_id" : "1906C&T....27..558.", "citation_count" : 0, "read_count" : 1, "boost" : 0.0725682578903921, "norm_cites": 15 }
+{ "_id" : "1911PA.....19..524W", "citation_count" : 1, "read_count" : 1, "boost" : 0.115017967498934, "norm_cites": 16 }
+{ "_id" : "1913C&T....34...11V", "citation_count" : 0, "read_count" : 3, "boost" : 0.145136515780784, "norm_cites": 17 }
+{ "_id" : "1915ApJ....41..116A", "citation_count" : 1, "read_count" : 2, "boost" : 0.145136515780784, "norm_cites": 18 }
