@@ -6,6 +6,7 @@ Created on Oct 25, 2012
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pymongo") 
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="mongoalchemy") 
 
 import pytz
 import logging
