@@ -14,10 +14,10 @@ import ConfigParser
 import logging
 log = logging.getLogger(__name__)
         
-def init_logging(base_dir, verbose=False, debug=False):
+def init_logging(base_dir, calling_script, verbose=False, debug=False):
 
     log_dir = os.path.exists(base_dir + "/logs") and base_dir + "/logs" or "."
-    logfile = "%s/%s" % (log_dir, os.path.basename(__file__)) + "." + datetime.now().strftime("%Y%m%d-%H%M%S")
+    logfile = "%s/%s" % (log_dir, os.path.basename(calling_script)) + "." + datetime.now().strftime("%Y%m%d-%H%M%S")
 
     logging.basicConfig(
         filename = logfile, 

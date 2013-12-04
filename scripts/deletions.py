@@ -127,7 +127,7 @@ if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     config = utils.load_config(os.path.join(base_dir, 'adsdata.cfg'))
 
-    log = utils.init_logging(base_dir, opts.verbose, opts.debug)
+    log = utils.init_logging(base_dir, __file__, opts.verbose, opts.debug)
     if opts.debug:
         log.setLevel(logging.DEBUG)
     
