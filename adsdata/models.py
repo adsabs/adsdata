@@ -125,14 +125,13 @@ class DataFileCollection(DataCollection):
         """
         
         collection_name = cls.config_collection_name
-        if cls.aggregated:
-            load_collection_name = collection_name + '_load'
-        else:
-            load_collection_name = collection_name
+        load_collection_name = collection_name + '_load'
         collection = session.get_collection(load_collection_name)
-        # given that the load time may be quite long, shouldn't we create an updated
-        # collection then swap it in place rather than dropping it before loading?
-        collection.drop()
+
+        # calculate the last_synced timestamp now so that any changes to the source
+        # during loading will still trigger a new sync
+        dlt = DataLoadTime(collection=collection_name, last_synced=datetime.utcnow().replace(tzinfo=pytz.utc))
+
         log.debug("loading data into %s" % load_collection_name)
         
         def get_collection_field_name(field):
@@ -156,11 +155,6 @@ class DataFileCollection(DataCollection):
 
         cls.post_load_data(session, collection)
         
-        # shouldn't the last_synced time be computed at the beginning of the load process
-        # (right after the data is read from the tsv file)?  Otherwise an update made to
-        # the source file while we are building and post-processing the collection but
-        # before we update the data_load_time entry will not trigger a new update here
-        dlt = DataLoadTime(collection=collection_name, last_synced=datetime.utcnow().replace(tzinfo=pytz.utc))
         session.update(dlt, DataLoadTime.collection == collection_name, upsert=True)
         log.debug("%s load time updated to %s" % (collection_name, str(dlt.last_synced)))
         
@@ -231,15 +225,54 @@ class DataFileCollection(DataCollection):
                     record[k] = constructor(v)
         
     @classmethod
-    def post_load_data(cls, *args, **kwargs):
+    def post_load_data(cls, session, source_collection, *args, **kwargs):
         """
-        this method gets called immediately following the data load.
-        subclasses should override to do things like generate
-        new collections using map-reduce on the original data
+        This method gets called immediately following the data load.
+        For normal collections it temporarily saves the existing collection
+        to "foo_prev", renames the "foo_load" collection to
+        the actual collection name, then cleans up the "foo_prev" collection if
+        everything went OK.
+        Subclasses should override to do things like generate
+        new collections using map-reduce on the original data, e.g., aggregated
+        collections do this in a different way.
         """
-        pass
-    
+        cls.swap_in_load_collection(session, source_collection)
+        
+    @classmethod
+    def swap_in_load_collection(cls, session, source_collection):
+        target_collection_name = cls.config_collection_name
+        target_collection = session.get_collection(target_collection_name)
+        
+        prev_collection_name = target_collection_name + '_prev'
+        prev_collection = session.get_collection(prev_collection_name)
 
+        prev_collection.drop()
+
+        if target_collection.count() > 0:
+            try:
+                target_collection.rename(prev_collection_name)
+                log.debug("%s collection renamed to %s", target_collection_name, prev_collection_name)
+
+            except pymongo.errors.OperationFailure, e:
+                log.error("unable to rename existing %s collection: %s", target_collection_name, e)
+                raise
+        
+        # rename the newly built collection
+        try:
+            source_collection.rename(target_collection_name)
+            log.debug("new collection renamed to %s", target_collection_name)
+            
+        except pymongo.errors.OperationFailure, e:
+            log.error("unable to rename new collection: %s", e)
+            if prev_collection.count() > 0:
+                log.debug("restoring from previously saved collection")
+                try:
+                    prev_collection.rename(target_collection_name)
+                except pymongo.errors.OperationFailure, e:
+                    log.error("well, crap, something's gone seriously wrong: %s", e)
+                    raise
+        
+        prev_collection.drop()
     
 class Bibstem(DataFileCollection):
     bibstem = fields.StringField()
