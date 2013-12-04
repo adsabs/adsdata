@@ -7,3 +7,4 @@ nose
 -e git+https://github.com/theorm/mongobox.git#egg=mongobox
 Flask==0.10.1
 simplejson
+mock>=1.0.1
