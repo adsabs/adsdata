@@ -24,9 +24,12 @@ from time import sleep
 from bson import DBRef
 from datetime import datetime, timedelta
 from mongoalchemy import fields
+from mock import patch
+from contextlib import contextmanager
 
 from adsdata import models, utils
 from adsdata.session import *
+from adsdata.models import DataFileCollection
 
 class BasicCollection(models.DataFileCollection):
     config_collection_name = 'adsdata_test'
@@ -48,6 +51,10 @@ class AggregatedCollection(models.DataFileCollection):
     bar = fields.ListField(fields.StringField())
     aggregated = True
     field_order = [foo, bar]
+    
+    @classmethod
+    def post_load_data(cls, *args, **kwargs):
+        pass
     
 def load_data(config):
     import subprocess
@@ -138,6 +145,19 @@ class TestDataCollection(AdsdataTestCase):
         self.assertEqual(collection.find_one({'_id': 'e'}), {'_id': 'e', 'bar': ''})
         self.assertEqual(collection.find_one({'_id': ''}), {'_id': '', 'bar': 6})
         
+    def test_load_data_post_load(self):
+        
+        tmp = tempfile.NamedTemporaryFile()
+        for pair in zip("abcd","1234"):
+            print >>tmp, "%s\t%s" % pair
+        tmp.flush()
+        
+        with patch.object(DataFileCollection, 'post_load_data') as mock_post_load_data:
+            BasicCollection.load_data(self.session, tmp.name)
+            
+        collection = self.session.get_collection('adsdata_test_load')
+        self.assertEqual(collection.count(), 4)
+        
     def test_restkey(self):
         tmp = tempfile.NamedTemporaryFile()
         for triplet in zip("abcd","1234","wxyz"):
@@ -163,8 +183,6 @@ class TestDataCollection(AdsdataTestCase):
             print >>tmp, "%s\t%s" % pair
         tmp.flush()
         AggregatedCollection.load_data(self.session, tmp.name)
-        self.assertEqual(self.session.query(AggregatedCollection).count(), 0, 'no records loaded in the actual collection')
-        self.assertEqual(self.session.get_collection('adsdata_test_load').count(), 8, 'all records loaded in "_load" collection')
         
         utils.map_reduce_listify(self.session, self.session.get_collection('adsdata_test_load'), 'adsdata_test', 'load_key', 'bar')
         self.assertEqual(self.session.query(AggregatedCollection).count(), 4, 'map-reduce loaded ')
