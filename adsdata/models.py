@@ -332,7 +332,7 @@ class References(DataFileCollection):
         target_collection_name = cls.config_collection_name
         utils.map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'references')
 
-class Citations(DataFileCollection):
+class Citations(DataFileCollection, DocsDataCollection):
     
     bibcode = fields.StringField(_id=True)
     citations = fields.ListField(fields.StringField())
@@ -340,6 +340,7 @@ class Citations(DataFileCollection):
     aggregated = True
     config_collection_name = 'citations'
     field_order = [bibcode, citations]
+    docs_fields = [citations]
     
     def __str__(self):
         return "Citations(%s): [%s]" % (self.bibcode, self.citations)
