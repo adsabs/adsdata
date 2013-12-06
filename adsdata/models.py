@@ -284,6 +284,18 @@ class Bibstem(DataFileCollection):
     
     def __str__(self):
         return "Bibstem(%s): %s (%s)" % (self.bibstem, self.journal_name, self.type_code)
+
+class BibstemRanked(DataFileCollection):
+    weight = fields.IntField(default=1)
+    value = fields.StringField()
+    label = fields.StringField()
+    
+    config_collection_name = 'bibstems_ranked'
+    field_order = [weight,value,label]
+    
+    def __str__(self):
+        return "BibstemRanked(%s): %s (%s)" % (self.value, self.label, self.weight)
+    
     
 class FulltextLink(DataFileCollection):
     bibcode = fields.StringField(_id=True)
