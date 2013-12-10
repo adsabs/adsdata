@@ -246,7 +246,7 @@ class TestDocs(AdsdataTestCase):
         load_data(self.config)
         self.maxDiff = None
         doc = self.session.generate_doc("1874MNRAS..34..279L")
-        self.assertEqual(doc, {'ack': DBRef('fulltext', '1874MNRAS..34..279L'),
+        self.assertEqual(doc, {'ack': u'Lorem ipsum dolor sit amet, consecteteur adipiscing elit quisque, vel parturient.',
                                '_id': '1874MNRAS..34..279L',
                                'boost': 0.16849827679273299,
                                'citation_count': 0,
@@ -257,14 +257,14 @@ class TestDocs(AdsdataTestCase):
                                'reads': [0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 0, 1, 2, 0, 1, 0, 5, 3],
                                'refereed': True})
         doc = self.session.generate_doc("2011AJ....142...62H")
-        self.assertEqual(doc, {'ack': DBRef('fulltext', '2011AJ....142...62H'),
+        self.assertEqual(doc, {'ack': None,
                                'grants': [{u'agency': u'NASA-HQ', u'grant': u'NNX09AF08G'}, {u'agency': u'NSF-AST', u'grant': u'0132798'}],
                                '_id': '2011AJ....142...62H',
                                'full': DBRef('fulltext', '2011AJ....142...62H'),
                                'readers': [u'430b0f6bd4', u'47d44dcaa9', u'48e27000f7', u'4cd02adfcc', u'4d46866c42', u'4d9b481763', u'4dce469f96', u'4f42520a18', u'4f63a3ac89', u'5039333cdb', u'504752fb6f', u'50844719d9', u'508fd5906b', u'50a267e8dd', u'50cf5b9972', u'50e4598eac', u'50e5930703', u'50ee1d6594', u'510ed9928c', u'51236f739c', u'51246644f5'],
                                'refereed': True})
         doc = self.session.generate_doc("1899Obs....22..253.")
-        self.assertEqual(doc, {'ack': DBRef('fulltext', '1899Obs....22..253.'),
+        self.assertEqual(doc, {'ack': None,
                                '_id': '1899Obs....22..253.',
                                'boost': 0.115017967498934,
                                'citation_count': 0,
@@ -274,20 +274,20 @@ class TestDocs(AdsdataTestCase):
                                'reads': [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0],
                                'refereed': True})
         doc = self.session.generate_doc("1995MNRAS.274...31W")
-        self.assertEqual(doc, {'ack': DBRef('fulltext', '1995MNRAS.274...31W'),
+        self.assertEqual(doc, {'ack': None,
                                '_id': '1995MNRAS.274...31W',
                                'full': DBRef('fulltext', '1995MNRAS.274...31W'),
                                'readers': [u'4f01774d0a', u'50effcf0d8', u'510ac1772a', u'51234f16c0', u'512d897d95'],
                                'refereed': True})
         doc = self.session.generate_doc("2002JPhA...35.8109K")
-        self.assertEqual(doc, {'ack': DBRef('fulltext', '2002JPhA...35.8109K'),
+        self.assertEqual(doc, {'ack': None,
                                '_id': '2002JPhA...35.8109K',
                                'full': DBRef('fulltext', '2002JPhA...35.8109K'),
                                'readers': [u'X0cae078a6', u'X12049c5ae'],
                                'refereed': True})
         # simbad objects -- can't get it to run?
         doc = self.session.generate_doc("2012AJ....144...41M")
-        self.assertEqual(doc, {'ack': DBRef('fulltext', '2012AJ....144...41M'),
+        self.assertEqual(doc, {'ack': None,
                                '_id': '2012AJ....144...41M',
                                'full': DBRef('fulltext', '2012AJ....144...41M'),
                                'readers': [ u"436f75a55a", u"46272c410e", u"490ab747dc", u"4939448062", u"4b5a08bbfe", u"4c6ba8aa3a", u"4c8b74d412", u"4e4e04ba43", u"4f062ccce1", u"501a251579", u"5027566670", u"50a4fe3774", u"50c080fcbf", u"50c3afbc0d", u"50f0d5b2b4", u"51008459eb", u"X058634054", u"X0655ebd3f", u"X0ae824e1a", u"X1b0df8aff", u"X1eef54acb", u"X21917fa62", u"X24bfec4a0", u"X25d68b840", u"X2a33f071f", u"X781029d71", u"X7da609b3b", u"X83d0b59d7", u"Xd118f4129", u"Xd727d89bb", u"Xe8ee1dc61", u"Xe8fe06b10" ],
@@ -298,10 +298,10 @@ class TestDocs(AdsdataTestCase):
         load_data(self.config)
         self.session.store_doc(self.session.generate_doc("2004PhRvD..70d6004F"))
         doc = self.session.get_doc("2004PhRvD..70d6004F", manipulate=False)
-        self.assertTrue(isinstance(doc['ack'], DBRef))
+        self.assertTrue(isinstance(doc['full'], DBRef))
         doc = self.session.get_doc("2004PhRvD..70d6004F")
-        self.assertFalse(isinstance(doc['ack'], DBRef))
-        self.assertEqual(doc['ack'], 'Lorem ipsum dolor sit amet, consecteteur adipiscing.')
+        self.assertFalse(isinstance(doc['full'], DBRef))
+        self.assertTrue(doc['full'].startswith('Lorem ipsum dolor sit amet, consecteteur adipiscing elit lacinia.'))
         
         doc = self.session.generate_doc("2011AJ....142...62H")
         self.assertEqual(doc['refereed'], True)
