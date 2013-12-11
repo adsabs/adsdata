@@ -73,8 +73,7 @@ class Fulltext(DocsDataCollection):
     ack = fields.StringField(default=None)
     
     config_collection_name = "fulltext"
-    docs_fields = [ack]
-    docs_ref_fields = [full]
+    docs_fields = [full,ack]
     
     def __str__(self):
         return "Fulltext(%s)" % self.bibcode

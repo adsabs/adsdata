@@ -18,7 +18,7 @@ from mongoalchemy.session import Session
 from pymongo.son_manipulator import SONManipulator
 
 DOCS_COLLECTION = 'docs'
-MONGO_DOCS_DEREF_FIELDS = [('docs','full')]
+MONGO_DOCS_DEREF_FIELDS = []
 
 class DataSession(object):
     """

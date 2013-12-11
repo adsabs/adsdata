@@ -6,8 +6,8 @@ Created on Oct 25, 2012
 
 import os
 import sys
-import site
-site.addsitedir(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) #@UndefinedVariable
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 if sys.version_info < (2,7):
     import unittest2 as unittest
@@ -250,7 +250,7 @@ class TestDocs(AdsdataTestCase):
                                '_id': '1874MNRAS..34..279L',
                                'boost': 0.16849827679273299,
                                'citation_count': 0,
-                               'full': DBRef('fulltext', '1874MNRAS..34..279L'),
+                               'full': u'Lorem ipsum dolor sit. Vitae ut aenean torquent feugiat in. Varius quis, condimentum blandit, donec sodales phasellus. Dignissim pellentesque parturient enim turpis dictum ipsum leo. Dolor ve amet sociosqu per, dapibus metus, eros ipsum. Curae taciti fames magna aptent eu ultricies. Vestibulum ut. Non nisl a. Malesuada nibh nec nisi sed imperdiet pulvinar, morbi et. Tortor laoreet nibh sollicitudin ac euismod pede, leo eget. Convallis morbi, ad semper in. Sapien. Phasellus nostra senectus curabitur lorem ad ve. Quam proin arcu quam cubilia feugiat sociis morbi fermentum. Imperdiet purus maecenas dui lectus nisi enim ut cras. At a urna id fringilla erat, viverra massa ad luctus sagittis. Nunc dignissim semper cursus, etiam integer sapien. Hymenaeos. Rhoncus lorem porta ante, eni elit molestie.',
                                'read_count': 4,
                                'norm_cites': 5,
                                'readers': [u'4f43e9286f', u'5108e7c0a8'],
@@ -260,7 +260,7 @@ class TestDocs(AdsdataTestCase):
         self.assertEqual(doc, {'ack': None,
                                'grants': [{u'agency': u'NASA-HQ', u'grant': u'NNX09AF08G'}, {u'agency': u'NSF-AST', u'grant': u'0132798'}],
                                '_id': '2011AJ....142...62H',
-                               'full': DBRef('fulltext', '2011AJ....142...62H'),
+                               'full': u'Lorem ipsum dolor sit amet, consecteteur. Montes purus nec. Eu habitasse euismod, tortor eros tortor sem, dictum, ut, faucibus. Justo. Lacinia augue integer dis id penatibus in, platea. Laoreet suspendisse nisl pede lobortis quis, eni augue nulla, pede fusce. Magna cursus penatibus. Eget nisl faucibus sed, orci praesent augue pellentesque, lacus in magnis nonummy. Ad. Id lacus ac. Bibendum hac, libero conubia mi, enim quam. Felis tempus dapibus rhoncus rutrum arcu nibh fames. Vehicula bibendum egestas sodales convallis quis dui malesuada montes. Taciti sem torquent habitasse pellentesque. Dapibus varius nunc eu fermentum a, eni tristique lorem velit. Curabitur egestas, magna in curabitur vestibulum. Lorem lacus. Vitae, mi ultricies imperdiet pede eget. Libero enim dolor.',
                                'readers': [u'430b0f6bd4', u'47d44dcaa9', u'48e27000f7', u'4cd02adfcc', u'4d46866c42', u'4d9b481763', u'4dce469f96', u'4f42520a18', u'4f63a3ac89', u'5039333cdb', u'504752fb6f', u'50844719d9', u'508fd5906b', u'50a267e8dd', u'50cf5b9972', u'50e4598eac', u'50e5930703', u'50ee1d6594', u'510ed9928c', u'51236f739c', u'51246644f5'],
                                'refereed': True})
         doc = self.session.generate_doc("1899Obs....22..253.")
@@ -268,7 +268,7 @@ class TestDocs(AdsdataTestCase):
                                '_id': '1899Obs....22..253.',
                                'boost': 0.115017967498934,
                                'citation_count': 0,
-                               'full': DBRef('fulltext', '1899Obs....22..253.'),
+                               'full': u'Lorem ipsum dolor sit amet. Aenean rutrum fames condimentum orci mollis, etiam pretium libero erat nisl habitant libero, primis potenti, blandit. Rhoncus pellentesque tincidunt risus augue. Felis dui amet nunc. Nunc, amet natoque ac, molestie quisque, integer. Praesent vehicula curae sem diam sociis lacinia ac primis pretium in tellus suscipit consequat. Cursus, molestie ante taciti in. Diam massa in donec sem ante sed sed ut ante eros suscipit eni gravida aptent, justo ante, justo. Faucibus quam rhoncus pede, nisl dolor id tristique risus semper. Scelerisque sem montes at, senectus. Sapien neque rhoncus proin elit, aliquam fringilla tempor fringilla porta velit ullamcorper. Praesent nam, etiam tincidunt. Ullamcorper neque primis ut. Ad, ullamcorper pede, arcu duis vel eni sit. Nisl parturient porttitor class consequat. Dui elit id facilisis a vulputate risus, praesent etiam, ac ante duis magnis, et. Feugiat vel facilisis conubia, nulla. Ut dui quam.',
                                'read_count': 2,
                                'norm_cites': 11,
                                'reads': [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0],
@@ -276,20 +276,20 @@ class TestDocs(AdsdataTestCase):
         doc = self.session.generate_doc("1995MNRAS.274...31W")
         self.assertEqual(doc, {'ack': None,
                                '_id': '1995MNRAS.274...31W',
-                               'full': DBRef('fulltext', '1995MNRAS.274...31W'),
+                               'full': u'Lorem ipsum dolor sit amet, consecteteur adipiscing elit cum adipiscing adipiscing. Fringilla, a donec ac sit elit elit nulla tempor pulvinar luctus arcu suspendisse cubilia curae parturient. Rhoncus, cum cras faucibus tincidunt amet nam nam curabitur sapien. Luctus quis convallis quam. Rutrum. Potenti ad, porttitor. A, rutrum arcu suspendisse conubia consectetuer vulputate litora adipiscing pellentesque. Turpis arcu, euismod eu, fringilla lorem et tortor. Sem pretium accumsan erat platea parturient morbi aliquet per. Vulputate enim eni. Sapien nisl sollicitudin sociosqu lorem. At sollicitudin posuere, sit. Potenti litora velit sociis at arcu metus in.',
                                'readers': [u'4f01774d0a', u'50effcf0d8', u'510ac1772a', u'51234f16c0', u'512d897d95'],
                                'refereed': True})
         doc = self.session.generate_doc("2002JPhA...35.8109K")
         self.assertEqual(doc, {'ack': None,
                                '_id': '2002JPhA...35.8109K',
-                               'full': DBRef('fulltext', '2002JPhA...35.8109K'),
+                               'full': u'Lorem ipsum dolor sit amet. Pede sagittis per amet ut consectetuer. Sit donec lectus mauris ridiculus. Massa lectus porta, parturient dapibus. Libero eros, sollicitudin sagittis. Arcu consectetuer et aliquet ante, inceptos est euismod ut, congue dis. Egestas, vehicula eu turpis fringilla tortor varius, netus cursus nostra ipsum condimentum sit, tortor congue fringilla. Sapien molestie porttitor ve, ut mi sem vulputate. Ligula elit in nisl maecenas id, ornare mus conubia etiam. Netus nunc fames. Fusce. Turpis ligula interdum ullamcorper non semper. Ad nec hendrerit massa et. Varius pede nunc mi sollicitudin. Nonummy natoque odio dignissim curabitur enim sit odio nunc. Curae scelerisque quam ante curae scelerisque placerat metus. Quis. Tellus litora mus, et quam ipsum, proin orci congue phasellus. Nec odio elit viverra odio, lacus facilisis per. Egestas pellentesque.',
                                'readers': [u'X0cae078a6', u'X12049c5ae'],
                                'refereed': True})
         # simbad objects -- can't get it to run?
         doc = self.session.generate_doc("2012AJ....144...41M")
         self.assertEqual(doc, {'ack': None,
                                '_id': '2012AJ....144...41M',
-                               'full': DBRef('fulltext', '2012AJ....144...41M'),
+                               'full': u'Lorem ipsum dolor sit amet, consecteteur adipiscing. Amet faucibus purus. Iaculis sollicitudin ornare id justo mi vitae taciti sociis nonummy. Ornare cursus magna per. Neque rhoncus sapien dictum nec, feugiat. Ut pulvinar quis. Potenti odio, consectetuer nascetur velit malesuada leo, sollicitudin luctus morbi ultricies. Proin pellentesque molestie lorem urna eni taciti a, quisque mollis. Tempus metus ullamcorper odio duis, elit curabitur torquent eu. Ridiculus. A. Suspendisse eu, cursus sociosqu. Lectus nec, euismod ve, nec. Montes, proin leo vitae pede metus, scelerisque eni, varius commodo.',
                                'readers': [ u"436f75a55a", u"46272c410e", u"490ab747dc", u"4939448062", u"4b5a08bbfe", u"4c6ba8aa3a", u"4c8b74d412", u"4e4e04ba43", u"4f062ccce1", u"501a251579", u"5027566670", u"50a4fe3774", u"50c080fcbf", u"50c3afbc0d", u"50f0d5b2b4", u"51008459eb", u"X058634054", u"X0655ebd3f", u"X0ae824e1a", u"X1b0df8aff", u"X1eef54acb", u"X21917fa62", u"X24bfec4a0", u"X25d68b840", u"X2a33f071f", u"X781029d71", u"X7da609b3b", u"X83d0b59d7", u"Xd118f4129", u"Xd727d89bb", u"Xe8ee1dc61", u"Xe8fe06b10" ],
                                'simbad_object_ids': [1514745, 1514748, 1514750, 1514751, 1514755, 1515364, 1519004, 1519087, 1519992, 1519997, 1520006, 1520008, 1520023, 1520024, 1520029, 1520032, 1520033, 1520034, 1520038, 1520139, 1520357, 1520371, 1520374, 1520381, 1520391, 1520395, 1520402, 1520404, 1520406, 1520413, 1520419, 1521360, 1521374, 1522778, 1575544, 3133169, 3754378, 5228155, 5228162, 5228174],
                                'refereed': True})
@@ -297,10 +297,7 @@ class TestDocs(AdsdataTestCase):
     def test_build_docs(self):
         load_data(self.config)
         self.session.store_doc(self.session.generate_doc("2004PhRvD..70d6004F"))
-        doc = self.session.get_doc("2004PhRvD..70d6004F", manipulate=False)
-        self.assertTrue(isinstance(doc['full'], DBRef))
         doc = self.session.get_doc("2004PhRvD..70d6004F")
-        self.assertFalse(isinstance(doc['full'], DBRef))
         self.assertTrue(doc['full'].startswith('Lorem ipsum dolor sit amet, consecteteur adipiscing elit lacinia.'))
         
         doc = self.session.generate_doc("2011AJ....142...62H")
