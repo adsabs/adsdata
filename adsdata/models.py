@@ -297,6 +297,17 @@ class BibstemRanked(DataFileCollection):
     def __str__(self):
         return "BibstemRanked(%s): %s (%s)" % (self.value, self.label, self.weight)
     
+    @classmethod
+    def post_load_data(cls, session, source_collection, *args, **kwargs):
+        """
+        conctatenate the label and value fields like so that 
+        label = "label (value)"
+        """
+        log.debug("munging ranked bibstem labels")
+        for d in source_collection.find():
+            d['label'] = "%s (%s)" % (d.get('label'), d.get('value'))
+            source_collection.save(d)
+        super(BibstemRanked, cls).post_load_data(session, source_collection, *args, **kwargs) 
     
 class FulltextLink(DataFileCollection):
     bibcode = fields.StringField(_id=True)
