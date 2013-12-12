@@ -303,7 +303,7 @@ class BibstemRanked(DataFileCollection):
         label = "label (value)"
         """
         log.debug("munging ranked bibstem labels")
-        for d in source_collection.find():
+        for d in source_collection.find(snapshot=True):
             d['label'] = "%s (%s)" % (d.get('label'), d.get('value'))
             source_collection.save(d)
         super(BibstemRanked, cls).post_load_data(session, source_collection, *args, **kwargs) 
