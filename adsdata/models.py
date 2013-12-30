@@ -30,7 +30,10 @@ def data_file_models():
 
 def doc_source_models():
     return _get_models(DocsDataCollection)
-        
+
+def metrics_data_source_models():
+    return _get_models(MetricsDataCollection)
+
 class DataLoadTime(Document):
     
     config_collection_name = 'data_load_time'
@@ -392,14 +395,20 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
     @classmethod
     def add_metrics_data(cls, doc, session, bibcode):
         entry = cls.get_entry(session, bibcode)
+        if not entry:
+            citations = []
+        else:
+            citations = entry
         refereed_collection = session.get_collection('refereed')
-        if entry:
-            doc['refereed'] = refereed_collection.find_one({'_id':bibcode})
-            doc['citations'] = entry
-            doc['citation_num'] = len(doc['citations'])
-            doc['refereed_citations'] = filter(lambda a: refereed_collection.find_one({'_id':a}) == True, doc['citations'])
-            doc['refereed_citation_num'] = len(doc['refereed_citations'])
-
+        refereed = False
+        if refereed_collection.find_one({'_id':bibcode}):
+            refereed = True
+        doc['refereed'] = refereed
+        doc['citations'] = citations
+        doc['citation_num'] = len(doc['citations'])
+        doc['refereed_citations'] = filter(lambda a: refereed_collection.find_one({'_id':a}) == True, doc['citations'])
+        doc['refereed_citation_num'] = len(doc['refereed_citations'])
+        print doc
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name

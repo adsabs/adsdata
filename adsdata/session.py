@@ -88,7 +88,7 @@ class DataSession(object):
         return self.metrics_data_source_models
 
     def generate_metrics_data(self, bibcode):
-        doc = {'_id': bibcode.lower(), 'bicode': bibcode}
+        doc = {'_id': bibcode.lower(), 'bibcode': bibcode}
         for model_class in self.metrics_data_sources():
             model_class.add_metrics_data(doc, self, bibcode)
 
