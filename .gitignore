@@ -6,3 +6,5 @@
 adsdata.cfg
 local_config.py
 test/demo_collections/*.tsv
+*.pyc
+sync_mongo_data.py.20*

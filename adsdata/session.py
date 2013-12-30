@@ -78,6 +78,17 @@ class DataSession(object):
             model_class.add_docs_data(doc, self, bibcode)
         return doc
     
+    def metrics_data_sources(self):
+        if not hasattr(self, 'metrics_data_source_models'):
+            from adsdata.models import metrics_data_source_models
+            self.metrics_data_source_models = list(metrics_data_source_models())
+        return self.metrics_data_source_models
+
+    def generate_metrics_data(self, bibcode):
+        doc = {'_id': bibcode.lower(), 'bicode': bibcode}
+        for model_class in self.metrics_data_sources():
+            model_class.add_metrics_data(doc, self, bibcode)
+
     def store_doc(self, doc):
         
         log = logging.getLogger()
