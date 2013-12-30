@@ -18,6 +18,7 @@ from mongoalchemy.session import Session
 from pymongo.son_manipulator import SONManipulator
 
 DOCS_COLLECTION = 'docs'
+METRICS_DATA_COLLECTION = 'metrics_data'
 MONGO_DOCS_DEREF_FIELDS = []
 
 class DataSession(object):
@@ -33,6 +34,8 @@ class DataSession(object):
         self.db = self.malchemy.db
         self.docs = self.db[DOCS_COLLECTION]
         self.docs.ensure_index('_digest')
+        self.metrics_data = self.db[METRICS_DATA_COLLECTION]
+        self.metrics_data.ensure_index('_digest')
         self.pymongo = self.db.connection
         if inc_manipulators:
             # NOTE: order is important here
@@ -111,7 +114,30 @@ class DataSession(object):
         # NOTE: even for cases where there was no existing doc we need to do an 
         # upsert to avoid race conditions
         return self.docs.update(spec, doc, manipulate=True, upsert=True)
-            
+
+    def store_metrics_data(self, doc):
+        
+        log = logging.getLogger()
+        
+        doc["_digest"] = doc_digest(doc, self.db)
+        spec = {'_id': doc['_id'] } #, '_digest': digest}
+        
+        # look for existing doc 
+        existing = self.metrics_data.find_one(spec, manipulate=False)
+        if existing:
+            # do the digest values match?
+            if existing.has_key("_digest") and existing["_digest"] == doc["_digest"]:
+                # no change; do nothing
+                log.debug("Digest match. No change to %s", str(spec))
+                return
+            elif existing.has_key("_digest"):
+                # add existing digest value to spec to avoid race conditions
+                spec['_digest'] = existing["_digest"]
+        
+        # NOTE: even for cases where there was no existing doc we need to do an 
+        # upsert to avoid race conditions
+        return self.metrics_data.update(spec, doc, manipulate=True, upsert=True)
+
 class DatetimeInjector(SONManipulator):
     """
     Used for injecting/removing the datetime values of records in

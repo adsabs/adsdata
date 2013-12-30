@@ -77,7 +77,7 @@ class MetricsDataCollection(DataCollection):
         return collection.find_one({'_id': bibcode})
 
     @classmethod
-    def add_docs_data(cls, doc, session, bibcode):
+    def add_metrics_data(cls, doc, session, bibcode):
         entry = cls.get_entry(session, bibcode)
         if entry:
             for field in cls.docs_fields:
@@ -376,7 +376,7 @@ class References(DataFileCollection):
         target_collection_name = cls.config_collection_name
         utils.map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'references')
 
-class Citations(DataFileCollection, DocsDataCollection):
+class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
     
     bibcode = fields.StringField(_id=True)
     citations = fields.ListField(fields.StringField())
@@ -389,6 +389,17 @@ class Citations(DataFileCollection, DocsDataCollection):
     def __str__(self):
         return "Citations(%s): [%s]" % (self.bibcode, self.citations)
     
+    @classmethod
+    def add_metrics_data(cls, doc, session, bibcode):
+        entry = cls.get_entry(session, bibcode)
+        refereed_collection = session.get_collection('refereed')
+        if entry:
+            doc['refereed'] = refereed_collection.find_one({'_id':bibcode})
+            doc['citations'] = entry
+            doc['citation_num'] = len(doc['citations'])
+            doc['refereed_citations'] = filter(lambda a: refereed_collection.find_one({'_id':a}) == True, doc['citations'])
+            doc['refereed_citation_num'] = len(doc['refereed_citations'])
+
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
