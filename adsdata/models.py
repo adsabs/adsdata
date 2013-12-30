@@ -526,4 +526,16 @@ class Grants(DataFileCollection, DocsDataCollection):
     def __str__(self):
         return "Grants(%s): %s, %s" % (self.bibcode, self.agency, self.grant)
 
+class Authors(DataFileCollection):
 
+    bibcode = fields.StringField(_id=True)
+    authors = fields.ListField(fields.StringField())
+
+    restkey = 'authors'
+
+    config_collection_name = 'authors'
+    field_order = [bibcode]
+    docs_fields = [authors]
+
+    def __str__(self):
+        return "Authors(%s)" % self.bibcode
