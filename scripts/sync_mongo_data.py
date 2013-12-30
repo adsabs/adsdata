@@ -71,7 +71,7 @@ if __name__ == "__main__":
     op = OptionParser()
     op.set_usage("usage: sync_mongo_data.py [options] [%s]" % '|'.join(commands.map.keys()))
     op.add_option('-c','--collection', dest="collection", action="append", default=[])
-    op.add_option('-t','--threads', dest="threads", action="store", type=int, default=cpu_count())
+    op.add_option('-t','--threads', dest="threads", action="store", type=int, default=int(cpu_count() / 2))
     op.add_option('-f','--force', dest="force", action="store_true", default=False)
     op.add_option('-d','--debug', dest="debug", action="store_true", default=False)
     op.add_option('-v','--verbose', dest="verbose", action="store_true", default=False)
