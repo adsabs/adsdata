@@ -117,7 +117,7 @@ if __name__ == '__main__':
                   help="collection to use as the authority")
     op.add_option('-s', '--subject', dest="subject", action="store", default='docs',
                   help="collection to be examined for possible deletions")
-    op.add_option('-t','--threads', dest="threads", action="store", type=int, default=cpu_count())# * 2)
+    op.add_option('-t','--threads', dest="threads", action="store", type=int, default=int(cpu_count() / 2))
     op.add_option('-l','--limit', dest='limit', action='store',
         help='process this many', type=int, default=None)
     op.add_option('-d','--debug', dest="debug", action="store_true", default=False)
