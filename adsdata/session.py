@@ -42,6 +42,8 @@ class DataSession(object):
             self.add_manipulator(DigestInjector(DOCS_COLLECTION))
             self.add_manipulator(DatetimeInjector(DOCS_COLLECTION))
             self.add_manipulator(DereferenceManipulator(MONGO_DOCS_DEREF_FIELDS))
+            self.add_manipulator(DigestInjector(METRICS_DATA_COLLECTION))
+            self.add_manipulator(DatetimeInjector(METRICS_DATA_COLLECTION))
     
     def add_manipulator(self, manipulator):
         self.db.add_son_manipulator(manipulator)
@@ -88,9 +90,10 @@ class DataSession(object):
         return self.metrics_data_source_models
 
     def generate_metrics_data(self, bibcode):
-        doc = {'_id': bibcode.lower(), 'bibcode': bibcode}
+        doc = {'_id': bibcode}
         for model_class in self.metrics_data_sources():
             model_class.add_metrics_data(doc, self, bibcode)
+        return doc
 
     def store_doc(self, doc):
         
