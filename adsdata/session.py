@@ -82,7 +82,11 @@ class DataSession(object):
         for model_class in self.docs_sources():
             model_class.add_docs_data(doc, self, bibcode)
         return doc
-    
+
+    def get_metrics_data(self, bibcode, manipulate=False):
+        spec = {'_id': bibcode}
+        return self.metrics_data.find_one(spec, manipulate=manipulate)
+
     def metrics_data_sources(self):
         if not hasattr(self, 'metrics_data_source_models'):
             from adsdata.models import metrics_data_source_models

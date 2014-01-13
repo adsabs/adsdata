@@ -393,7 +393,32 @@ class TestDocs(AdsdataTestCase):
         # datetime value should not have been updated
         self.assertEqual(existing_dt, unmodified_doc['_dt'])
         
-        
+class TestMetrics(AdsdataTestCase):        
     
+    def test_generate_metrics_data(self):
+        load_data(self.config)
+        self.maxDiff = None
+        doc = self.session.generate_metrics_data("1920ApJ....51....4D")
+        self.assertEqual(doc, {'_id': '1920ApJ....51....4D',
+                               'refereed': True,
+                               'rn_citations': 0.070302403721891962,
+                               'downloads': [0, 0, 0, 5, 3, 3, 2, 6, 1, 8, 7, 2, 7, 3, 2, 0, 4, 5],
+                               'reads': [0, 0, 0, 5, 4, 3, 3, 6, 1, 8, 12, 4, 7, 3, 2, 2, 8, 0],
+                               'an_citations': 0.052631578947368418,
+                               'refereed_citation_num': 4,
+                               'citation_num': 5,
+                               'citations': [u'1983ARA&A..21..373O', u'2000JOptB...2..534W', u'2000PhRvL..84.2094A', u'2001AJ....122..308G', u'2011foobar........X'],
+                               'refereed_citations': [u'1983ARA&A..21..373O', u'2000JOptB...2..534W', u'2000PhRvL..84.2094A', u'2001AJ....122..308G'],
+                               'author_num': 1,
+                               'an_refereed_citations': 0.042105263157894736
+                               })
+    def test_build_metrics_data(self):
+        load_data(self.config)
+        self.session.store_metrics_data(self.session.generate_metrics_data("1920ApJ....51....4D"))
+        doc = self.session.get_metrics_data("1920ApJ....51....4D")
+        self.assertEqual(doc['citation_num'], 5)
+        self.assertEqual(doc['refereed_citation_num'], 4)
+        self.assertEqual(doc['refereed'], True)
+
 if __name__ == '__main__':
     unittest.main()
