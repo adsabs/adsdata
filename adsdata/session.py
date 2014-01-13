@@ -83,7 +83,7 @@ class DataSession(object):
             model_class.add_docs_data(doc, self, bibcode)
         return doc
 
-    def get_metrics_data(self, bibcode, manipulate=False):
+    def get_metrics_data(self, bibcode, manipulate=True):
         spec = {'_id': bibcode}
         return self.metrics_data.find_one(spec, manipulate=manipulate)
 
