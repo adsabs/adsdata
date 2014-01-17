@@ -86,9 +86,6 @@ class MetricsDataCollection(DataCollection):
             for field in cls.docs_fields:
                 key = field.db_field
                 doc[key] = entry.get(key)
-            for ref_field in cls.docs_ref_fields:
-                key = ref_field.db_field
-                doc[key] = DBRef(collection=cls.config_collection_name, id=bibcode)
 
 class Fulltext(DocsDataCollection):
     
