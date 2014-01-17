@@ -21,8 +21,10 @@ commands = utils.commandList()
 
 class Builder(Process):
     
-    def __init__(self, task_queue, result_queue):
+    def __init__(self, task_queue, result_queue, do_docs=True, do_metrics=True):
         Process.__init__(self)
+        self.do_docs = do_docs
+        self.do_metrics = do_metrics
         self.task_queue = task_queue
         self.result_queue = result_queue
         self.session = utils.get_session(config)
@@ -37,8 +39,12 @@ class Builder(Process):
                 break
             log.info("Worker %s: working on %s", self.name, bibcode)
             try:
-                doc = self.session.generate_doc(bibcode)
-                self.session.store_doc(doc)
+                if self.do_docs:
+                    doc = self.session.generate_doc(bibcode)
+                    self.session.store(doc, self.session.docs)
+                if self.do_metrics:
+                    metrics = self.session.generate_metrics_data(bibcode)
+                    self.session.store(metrics, self.session.metrics_data)
             except DocDataException, e:
                 log.error("Something went wrong building %s: %s", bibcode, e)
             except:
@@ -75,10 +81,15 @@ def get_bibcodes(opts):
 def build_synchronous(opts):
     session = utils.get_session(config)
     for bib in get_bibcodes(opts):
-        doc = session.generate_doc(bib)
-        if doc is not None:
-            saved = session.store_doc(doc)
-            log.info("Saved: %s", str(saved))
+        if 'doc' in opts.do:
+            doc = session.generate_doc(bib)
+            if doc is not None:
+                session.store(doc, session.docs)
+        if 'metrics' in opts.do:
+            metrics = session.generate_metrics_data(bib)
+            if metrics is not None:
+                session.store(metrics, session.metrics_data)
+        log.info("Done building %s", bib)
     return
         
 @commands
@@ -87,13 +98,17 @@ def build(opts):
     results = JoinableQueue()
     
     if opts.remove:
-        log.info("Removing existing docs collection")
+        log.info("Removing existing docs and metrics_data collection")
         session = utils.get_session(config)
         session.docs.drop()
+        session.metrics_data.drop()
         
+    do_docs = 'docs' in opts.do
+    do_metrics = 'metrics' in opts.do
+    
     # start up our builder threads
     log.info("Creating %d Builder processes" % opts.threads)
-    builders = [ Builder(tasks, results) for i in xrange(opts.threads)]
+    builders = [ Builder(tasks, results, do_docs, do_metrics) for i in xrange(opts.threads)]
     for b in builders:
         b.start()
         
@@ -123,6 +138,7 @@ if __name__ == "__main__":
     
     op = OptionParser()
     op.set_usage("usage: build_docs.py [options] [%s]" % '|'.join(commands.map.keys()))
+    op.add_option('--do', dest="do", action="append", default=['docs','metrics'])
     op.add_option('-i', '--infile', dest="infile", action="store")
     op.add_option('-s', '--source_model', dest="source_model", action="store", default="Accno")
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=cpu_count()) # * 2)
