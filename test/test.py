@@ -296,7 +296,7 @@ class TestDocs(AdsdataTestCase):
         
     def test_build_docs(self):
         load_data(self.config)
-        self.session.store_doc(self.session.generate_doc("2004PhRvD..70d6004F"))
+        self.session.store(self.session.generate_doc("2004PhRvD..70d6004F"), self.session.docs)
         doc = self.session.get_doc("2004PhRvD..70d6004F")
         self.assertTrue(doc['full'].startswith('Lorem ipsum dolor sit amet, consecteteur adipiscing elit lacinia.'))
         
@@ -328,7 +328,7 @@ class TestDocs(AdsdataTestCase):
         entry = collection.find_one({"foo": 1}, manipulate=False)
         self.assertTrue(entry.has_key('_digest'))
         
-        digest = doc_digest({"bar": 1}, self.session.db)
+        digest = record_digest({"bar": 1}, self.session.db)
         collection.insert({"baz": 1, "_digest": digest})
         entry = collection.find_one({"baz": 1}, manipulate=False)
         self.assertEqual(entry['_digest'], digest)
@@ -357,8 +357,8 @@ class TestDocs(AdsdataTestCase):
         
     def test_store_doc(self):
         new_doc = {"_id": "2000abcd..123..456A", "foo": "bar"}
-        digest = doc_digest(new_doc, self.session.db)
-        self.session.store_doc(new_doc)
+        digest = record_digest(new_doc, self.session.db)
+        self.session.store(new_doc, self.session.docs)
         stored_doc = self.session.get_doc(new_doc['_id'], manipulate=False)
         self.assertIn("_digest", stored_doc)
         self.assertIn("_dt", stored_doc)
@@ -372,8 +372,8 @@ class TestDocs(AdsdataTestCase):
         del existing_doc['_digest']
         del existing_doc['_dt']
         existing_doc['abcd'] = 1234
-        new_digest = doc_digest(existing_doc, self.session.db)
-        self.session.store_doc(existing_doc)
+        new_digest = record_digest(existing_doc, self.session.db)
+        self.session.store(existing_doc, self.session.docs)
         modified_doc = self.session.get_doc("1999abcd.1234..111Q", manipulate=False)
         self.assertEqual(modified_doc['_digest'], new_digest)
         self.assertNotEqual(modified_doc['_digest'], existing_digest)
@@ -385,15 +385,40 @@ class TestDocs(AdsdataTestCase):
         existing_dt = existing_doc['_dt']
         del existing_doc['_digest']
         del existing_doc['_dt']
-        new_digest = doc_digest(existing_doc, self.session.db)
-        self.session.store_doc(existing_doc)
+        new_digest = record_digest(existing_doc, self.session.db)
+        self.session.store(existing_doc, self.session.docs)
         unmodified_doc = self.session.get_doc("1999abcd.1234..111Q", manipulate=False)
         self.assertEqual(new_digest, unmodified_doc['_digest'])
         self.assertEqual(existing_digest, unmodified_doc['_digest'])
         # datetime value should not have been updated
         self.assertEqual(existing_dt, unmodified_doc['_dt'])
         
-        
+class TestMetrics(AdsdataTestCase):        
     
+    def test_generate_metrics_data(self):
+        load_data(self.config)
+        self.maxDiff = None
+        doc = self.session.generate_metrics_data("1920ApJ....51....4D")
+        self.assertEqual(doc, {'_id': '1920ApJ....51....4D',
+                               'refereed': True,
+                               'rn_citations': 0.070302403721891962,
+                               'downloads': [0, 0, 0, 5, 3, 3, 2, 6, 1, 8, 7, 2, 7, 3, 2, 0, 4, 5],
+                               'reads': [0, 0, 0, 5, 4, 3, 3, 6, 1, 8, 12, 4, 7, 3, 2, 2, 8, 0],
+                               'an_citations': 0.052631578947368418,
+                               'refereed_citation_num': 4,
+                               'citation_num': 5,
+                               'citations': [u'1983ARA&A..21..373O', u'2000JOptB...2..534W', u'2000PhRvL..84.2094A', u'2001AJ....122..308G', u'2011foobar........X'],
+                               'refereed_citations': [u'1983ARA&A..21..373O', u'2000JOptB...2..534W', u'2000PhRvL..84.2094A', u'2001AJ....122..308G'],
+                               'author_num': 1,
+                               'an_refereed_citations': 0.042105263157894736
+                               })
+    def test_build_metrics_data(self):
+        load_data(self.config)
+        self.session.store(self.session.generate_metrics_data("1920ApJ....51....4D"), self.session.metrics_data)
+        doc = self.session.get_metrics_data("1920ApJ....51....4D")
+        self.assertEqual(doc['citation_num'], 5)
+        self.assertEqual(doc['refereed_citation_num'], 4)
+        self.assertEqual(doc['refereed'], True)
+
 if __name__ == '__main__':
     unittest.main()

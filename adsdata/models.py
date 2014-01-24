@@ -30,7 +30,10 @@ def data_file_models():
 
 def doc_source_models():
     return _get_models(DocsDataCollection)
-        
+
+def metrics_data_source_models():
+    return _get_models(MetricsDataCollection)
+
 class DataLoadTime(Document):
     
     config_collection_name = 'data_load_time'
@@ -66,6 +69,24 @@ class DocsDataCollection(DataCollection):
                 key = ref_field.db_field
                 doc[key] = DBRef(collection=cls.config_collection_name, id=bibcode)
                 
+class MetricsDataCollection(DataCollection):
+
+    docs_fields = []
+    docs_ref_fields = []
+
+    @classmethod
+    def get_entry(cls, session, bibcode):
+        collection = session.get_collection(cls.config_collection_name)
+        return collection.find_one({'_id': bibcode})
+
+    @classmethod
+    def add_metrics_data(cls, doc, session, bibcode):
+        entry = cls.get_entry(session, bibcode)
+        if entry:
+            for field in cls.docs_fields:
+                key = field.db_field
+                doc[key] = entry.get(key)
+
 class Fulltext(DocsDataCollection):
     
     bibcode = fields.StringField(_id=True)
@@ -355,7 +376,7 @@ class References(DataFileCollection):
         target_collection_name = cls.config_collection_name
         utils.map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'references')
 
-class Citations(DataFileCollection, DocsDataCollection):
+class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
     
     bibcode = fields.StringField(_id=True)
     citations = fields.ListField(fields.StringField())
@@ -368,6 +389,37 @@ class Citations(DataFileCollection, DocsDataCollection):
     def __str__(self):
         return "Citations(%s): [%s]" % (self.bibcode, self.citations)
     
+    @classmethod
+    def add_metrics_data(cls, doc, session, bibcode):
+        today = datetime.today()
+        age = max(1.0, today.year - int(bibcode[:4]) + 1)
+        entry = cls.get_entry(session, bibcode)
+        try:
+            citations = entry.get('citations',[])
+        except:
+            citations = []
+        refereed_collection = session.get_collection('refereed')
+        refereed = False
+        if refereed_collection.find_one({'_id':bibcode}):
+            refereed = True
+        reference_collection = session.get_collection('references')
+        ref_norm = 0.0
+        for citation in citations:
+            try:
+                res = reference_collection.find_one({'_id':citation})
+                Nrefs = len(res.get('references',[]))
+                ref_norm += 1.0/float(max(5, Nrefs))
+            except:
+                pass
+        doc['refereed'] = refereed
+        doc['citations'] = citations
+        doc['citation_num'] = len(doc['citations'])
+        doc['refereed_citations'] = filter(lambda a: refereed_collection.find_one({'_id':a}), doc['citations'])
+        doc['refereed_citation_num'] = len(doc['refereed_citations'])
+        doc['an_citations'] = float(doc['citation_num'])/float(age)
+        doc['an_refereed_citations'] = float(doc['refereed_citation_num'])/float(age)
+        doc['rn_citations'] = ref_norm
+
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
@@ -457,7 +509,7 @@ class EprintMapping(DataFileCollection):
     def __str__(self):
         return "EprintMapping(%s): %s" % (self.arxivid, self.bibcode)
 
-class Reads(DataFileCollection, DocsDataCollection):
+class Reads(DataFileCollection, DocsDataCollection, MetricsDataCollection):
 
     bibcode = fields.StringField(_id=True)
     reads   = fields.ListField(fields.IntField())
@@ -471,7 +523,7 @@ class Reads(DataFileCollection, DocsDataCollection):
     def __str__(self):
         return "Reads(%s)" % self.bibcode
         
-class Downloads(DataFileCollection, DocsDataCollection):
+class Downloads(DataFileCollection, DocsDataCollection, MetricsDataCollection):
 
     bibcode = fields.StringField(_id=True)
     downloads = fields.ListField(fields.IntField())
@@ -505,4 +557,25 @@ class Grants(DataFileCollection, DocsDataCollection):
     def __str__(self):
         return "Grants(%s): %s, %s" % (self.bibcode, self.agency, self.grant)
 
+class Authors(DataFileCollection, MetricsDataCollection):
 
+    bibcode = fields.StringField(_id=True)
+    authors = fields.ListField(fields.StringField())
+
+    restkey = 'authors'
+
+    config_collection_name = 'authors'
+    field_order = [bibcode]
+    docs_fields = [authors]
+
+    @classmethod
+    def add_metrics_data(cls, doc, session, bibcode):
+        entry = cls.get_entry(session, bibcode)
+        try:
+            authors = entry.get('authors',[])
+        except:
+            authors = []
+        doc['author_num'] = len(authors)
+
+    def __str__(self):
+        return "Authors(%s)" % self.bibcode

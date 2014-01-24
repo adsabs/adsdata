@@ -18,6 +18,7 @@ from mongoalchemy.session import Session
 from pymongo.son_manipulator import SONManipulator
 
 DOCS_COLLECTION = 'docs'
+METRICS_DATA_COLLECTION = 'metrics_data'
 MONGO_DOCS_DEREF_FIELDS = []
 
 class DataSession(object):
@@ -33,11 +34,13 @@ class DataSession(object):
         self.db = self.malchemy.db
         self.docs = self.db[DOCS_COLLECTION]
         self.docs.ensure_index('_digest')
+        self.metrics_data = self.db[METRICS_DATA_COLLECTION]
+        self.metrics_data.ensure_index('_digest')
         self.pymongo = self.db.connection
         if inc_manipulators:
             # NOTE: order is important here
-            self.add_manipulator(DigestInjector(DOCS_COLLECTION))
-            self.add_manipulator(DatetimeInjector(DOCS_COLLECTION))
+            self.add_manipulator(DigestInjector([DOCS_COLLECTION, METRICS_DATA_COLLECTION]))
+            self.add_manipulator(DatetimeInjector([DOCS_COLLECTION, METRICS_DATA_COLLECTION]))
             self.add_manipulator(DereferenceManipulator(MONGO_DOCS_DEREF_FIELDS))
     
     def add_manipulator(self, manipulator):
@@ -77,19 +80,35 @@ class DataSession(object):
         for model_class in self.docs_sources():
             model_class.add_docs_data(doc, self, bibcode)
         return doc
-    
-    def store_doc(self, doc):
+
+    def get_metrics_data(self, bibcode, manipulate=True):
+        spec = {'_id': bibcode}
+        return self.metrics_data.find_one(spec, manipulate=manipulate)
+
+    def metrics_data_sources(self):
+        if not hasattr(self, 'metrics_data_source_models'):
+            from adsdata.models import metrics_data_source_models
+            self.metrics_data_source_models = list(metrics_data_source_models())
+        return self.metrics_data_source_models
+
+    def generate_metrics_data(self, bibcode):
+        doc = {'_id': bibcode}
+        for model_class in self.metrics_data_sources():
+            model_class.add_metrics_data(doc, self, bibcode)
+        return doc
+
+    def store(self, record, collection):
         
         log = logging.getLogger()
         
-        doc["_digest"] = doc_digest(doc, self.db)
-        spec = {'_id': doc['_id'] } #, '_digest': digest}
+        record["_digest"] = record_digest(record, self.db)
+        spec = {'_id': record['_id'] } #, '_digest': digest}
         
         # look for existing doc 
-        existing = self.docs.find_one(spec, manipulate=False)
+        existing = collection.find_one(spec, manipulate=False)
         if existing:
             # do the digest values match?
-            if existing.has_key("_digest") and existing["_digest"] == doc["_digest"]:
+            if existing.has_key("_digest") and existing["_digest"] == record["_digest"]:
                 # no change; do nothing
                 log.debug("Digest match. No change to %s", str(spec))
                 return
@@ -99,8 +118,8 @@ class DataSession(object):
         
         # NOTE: even for cases where there was no existing doc we need to do an 
         # upsert to avoid race conditions
-        return self.docs.update(spec, doc, manipulate=True, upsert=True)
-            
+        return collection.update(spec, record, manipulate=True, upsert=True)
+
 class DatetimeInjector(SONManipulator):
     """
     Used for injecting/removing the datetime values of records in
@@ -130,7 +149,7 @@ class DigestInjector(SONManipulator):
     def transform_incoming(self, son, collection):
         if collection.name in self.collections:
             if not son.has_key('_digest'):
-                son['_digest'] = doc_digest(son, collection.database)
+                son['_digest'] = record_digest(son, collection.database)
         return son
     
     def transform_outgoing(self, son, collection):
@@ -160,23 +179,23 @@ class DereferenceManipulator(SONManipulator):
                 dereference(son, collection.database, field_name)
         return son
     
-def doc_digest(doc, db, hashtype='sha1'):
+def record_digest(record, db, hashtype='sha1'):
     """
     generate a digest hash from a 'docs' dictionary
     """
     # first make a copy
-    digest_doc = doc.copy()
+    digest_record = record.copy()
     
     # remove any 'meta' values
-    for k in digest_doc.keys():
+    for k in digest_record.keys():
         if k.startswith('_'):
-            del digest_doc[k]
-        elif isinstance(digest_doc[k], DBRef):
-            dereference(digest_doc, db, k)
+            del digest_record[k]
+        elif isinstance(digest_record[k], DBRef):
+            dereference(digest_record, db, k)
             
     h = hashlib.new(hashtype)
     # sort_keys=True should make this deterministic?
-    json = simplejson.dumps(digest_doc, sort_keys=True)
+    json = simplejson.dumps(digest_record, sort_keys=True)
     h.update(json)
     return h.hexdigest()                
 
