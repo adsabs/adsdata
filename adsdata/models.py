@@ -14,6 +14,7 @@ from datetime import datetime
 import pymongo
 from mongoalchemy import fields
 from mongoalchemy.document import Document
+from collections import defaultdict
 
 from adsdata import utils
 
@@ -404,11 +405,13 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
             refereed = True
         reference_collection = session.get_collection('references')
         ref_norm = 0.0
+        rn_citations_hist = defaultdict(float)
         for citation in citations:
             try:
                 res = reference_collection.find_one({'_id':citation})
                 Nrefs = len(res.get('references',[]))
                 ref_norm += 1.0/float(max(5, Nrefs))
+                rn_citations_hist[citation[:4]] += ref_norm
             except:
                 pass
         doc['refereed'] = refereed
@@ -419,6 +422,7 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
         doc['an_citations'] = float(doc['citation_num'])/float(age)
         doc['an_refereed_citations'] = float(doc['refereed_citation_num'])/float(age)
         doc['rn_citations'] = ref_norm
+        doc['rn_citations_hist']=dict(rn_citations_hist)
 
     @classmethod
     def post_load_data(cls, session, source_collection):
