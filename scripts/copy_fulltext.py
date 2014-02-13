@@ -32,7 +32,7 @@ class Copier(Process):
     def __init__(self, task_queue, opts, config):
         Process.__init__(self)
         self.task_queue = task_queue
-        self.from_collection = MongoClient(host=opts.from_mongo)['solr4ads']['docs']
+        self.from_collection = MongoClient(host=config['ADSZEE_MONGO_URI'])['solr4ads']['docs']
         session = utils.get_session(config)
         self.to_collection = session.get_collection('fulltext')
         self.wanted = dict([(x,1) for x in opts.fields.split(',')])
@@ -89,7 +89,6 @@ def main(opts, config):
 if __name__ == '__main__':
     
     op = OptionParser()
-    op.add_option('--from_mongo', dest="from_mongo", action="store")
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=8)#cpu_count())# * 2)
     op.add_option('--limit', dest='limit', action='store',
         help='process this many', type=int, default=None)
