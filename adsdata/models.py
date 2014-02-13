@@ -19,7 +19,7 @@ from collections import defaultdict
 from adsdata import utils
 
 import logging
-log = logging.getLogger(__name__)
+log = logging.getLogger()
     
 def _get_models(cls):
     for name, obj in inspect.getmembers(sys.modules[__name__]):
