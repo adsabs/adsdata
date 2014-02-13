@@ -406,12 +406,14 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
         reference_collection = session.get_collection('references')
         ref_norm = 0.0
         rn_citations_hist = defaultdict(float)
+        rn_citation_data = []
         for citation in citations:
             try:
                 res = reference_collection.find_one({'_id':citation})
                 Nrefs = len(res.get('references',[]))
                 ref_norm += 1.0/float(max(5, Nrefs))
                 rn_citations_hist[citation[:4]] += ref_norm
+                rn_citation_data.append({'bibcode':citation,'ref_norm':ref_norm})
             except:
                 pass
         doc['refereed'] = refereed
@@ -422,6 +424,7 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
         doc['an_citations'] = float(doc['citation_num'])/float(age)
         doc['an_refereed_citations'] = float(doc['refereed_citation_num'])/float(age)
         doc['rn_citations'] = ref_norm
+        doc['rn_citation_data'] = rn_citation_data
         doc['rn_citations_hist']=dict(rn_citations_hist)
 
     @classmethod
@@ -579,7 +582,7 @@ class Authors(DataFileCollection, MetricsDataCollection):
             authors = entry.get('authors',[])
         except:
             authors = []
-        doc['author_num'] = len(authors)
+        doc['author_num'] = max(len(authors),1)
 
     def __str__(self):
         return "Authors(%s)" % self.bibcode
