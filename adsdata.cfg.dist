@@ -6,9 +6,11 @@ ADSDATA_MONGO_PORT = 27017
 ADSDATA_MONGO_USER = adsdata
 ADSDATA_MONGO_PASSWORD =
 
-ADSZEE_MONGO_URI = mongodb://user:pass@adszee/admin
+# where scripts/copy_fulltext.py fetches the fulltext from
+ADSZEE_MONGO_URI = mongodb://user:pass@host/db
 
 ADSDATA_MONGO_DATA_LOAD_BATCH_SIZE = 100000
+ADSDATA_TMP_DIR = 
 
 [collections]
 bibstems: /proj/ads_abstracts/config/bibstems.dat
