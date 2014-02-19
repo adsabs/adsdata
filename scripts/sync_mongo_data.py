@@ -4,6 +4,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import time
+import shutil
 import logging
 from optparse import OptionParser
 from multiprocessing import Pool, current_process, cpu_count
@@ -14,6 +15,19 @@ from adsdata.session import DataSession
 
 commands = utils.commandList()
     
+def copy_source(data_file, temp_dir):
+    log = logging.getLogger()
+    if not os.path.exists(temp_dir):
+        os.mkdir(temp_dir)
+    temp_path = "%s/%s" % (temp_dir, data_file.replace('/','_'))
+    log.info("copying %s to temp local file %s", data_file, temp_path)
+    try:
+        shutil.copyfile(data_file, temp_path)
+        return temp_path
+    except Exception, e:
+        log.error("Failed copying source file %s to %s", (data_file, temp_path))
+        raise    
+
 def load_data(update_args):
     model_class, data_file, batch_size = update_args
     log = logging.getLogger()
@@ -44,6 +58,7 @@ def sync(opts, config):
     for model_class, data_file in get_models(opts, config):
         if model_class.needs_sync(session, data_file) or opts.force:
             log.info("%s needs synching" % model_class.config_collection_name)
+            data_file = copy_source(data_file, config['ADSDATA_TMP_DIR'])
             update_args.append((model_class, data_file, config['ADSDATA_MONGO_DATA_LOAD_BATCH_SIZE']))
         else:
             log.info("%s does not need syncing" % model_class.config_collection_name)
@@ -52,6 +67,7 @@ def sync(opts, config):
         p.map(load_data, update_args)
     else:
         for cls, data_file, batch_size in update_args:
+            data_file = copy_source(data_file, config['ADSDATA_TMP_DIR'])
             load_data((cls, data_file, batch_size))
         
 @commands
