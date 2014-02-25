@@ -20,7 +20,7 @@ echo "#############" `date` ": synching data sources #################"
 python $BASEPATH/scripts/sync_mongo_data.py "$@" sync
 
 echo "#############" `date` ": copying fulltext ###################"
-python $BASEPATH/scripts/copy_fulltext.py --from_mongo=$FROM_MONGO "$@"
+python $BASEPATH/scripts/copy_fulltext.py "$@"
 
 echo "#############" `date` ": building docs collection ###################"
 python $BASEPATH/scripts/build_docs.py "$@" build
