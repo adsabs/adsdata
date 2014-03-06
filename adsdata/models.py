@@ -411,9 +411,10 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
             try:
                 res = reference_collection.find_one({'_id':citation})
                 Nrefs = len(res.get('references',[]))
-                ref_norm += 1.0/float(max(5, Nrefs))
+                Nrefs_normalized = 1.0/float(max(5, Nrefs))
+                ref_norm += Nrefs_normalized
                 rn_citations_hist[citation[:4]] += ref_norm
-                rn_citation_data.append({'bibcode':citation,'ref_norm':ref_norm})
+                rn_citation_data.append({'bibcode':citation,'ref_norm':Nrefs_normalized})
             except:
                 pass
         doc['refereed'] = refereed
