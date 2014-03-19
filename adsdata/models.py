@@ -7,6 +7,7 @@ import os
 import sys
 import csv
 import pytz
+import types
 import inspect
 from bson import DBRef
 from stat import ST_MTIME
@@ -240,7 +241,7 @@ class DataFileCollection(DataCollection):
                 continue
             model_field = cls.get_fields()[k]
             constructor = get_constructor(model_field)
-            if constructor and constructor in convert_types:
+            if constructor and (constructor in convert_types or isinstance(constructor, types.FunctionType)):
                 if type(v) is list:
                     record[k] = [constructor(x) for x in v]
                 else:
@@ -452,6 +453,10 @@ class DocMetrics(DataFileCollection, DocsDataCollection):
     citation_count = fields.IntField(default=0)
     read_count = fields.IntField(default=0)
     norm_cites = fields.IntField(default=0)
+    
+    # override the default float constructor so that we can control the precision
+    # otherwise the boost value is changing constantly and triggering doc timestamp changes
+    boost.constructor = lambda x: round(float(x), 4)
     
     config_collection_name = 'docmetrics'
     field_order = [bibcode,boost,citation_count,read_count,norm_cites]
