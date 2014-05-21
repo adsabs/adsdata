@@ -35,7 +35,6 @@ class Worker(Process):
             if bib is None:
                 log.debug("Nothing left to do for worker %s" % self.name)
                 self.task_queue.task_done()
-                log.info("task queue size: %d" % self.task_queue.qsize())
                 break
             log.debug("Worker %s is working on %s" % (self.name, bib))
             try:
@@ -49,7 +48,6 @@ class Worker(Process):
                 raise
             finally:
                 self.task_queue.task_done()
-                log.info("task queue size: %d" % self.task_queue.qsize())
 
 def find_deletions(opts, config):
     

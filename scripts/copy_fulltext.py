@@ -51,7 +51,7 @@ class Copier(Process):
                 if not doc: continue
                 doc['_id'] = bib
                 del doc['bibcode']
-                self.to_collection.save(doc)
+                self.to_collection.update({'_id': bib}, doc, upsert=True)
             except:
                 raise
 
@@ -60,8 +60,6 @@ def main(opts, config):
     log = logging.getLogger()
     
     session = utils.get_session(config)
-    to_collection = session.get_collection('fulltext')
-    to_collection.drop()
     
     bibiter = session.iterate(models.FulltextLink)
     bibiter = itertools.imap(lambda x: x.bibcode, bibiter)
