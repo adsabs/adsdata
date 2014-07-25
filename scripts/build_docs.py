@@ -15,7 +15,6 @@ from optparse import OptionParser
 from multiprocessing import Process, JoinableQueue, cpu_count
 
 from adsdata import utils, models
-from adsdata.exceptions import *
 
 commands = utils.commandList()
 
