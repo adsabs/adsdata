@@ -256,7 +256,7 @@ class HttpExtractor(Extractor):
         if not self.source_loaded:
             self.load_source()
 
-        return { 'body' : utils.text_cleanup(self.source_content, translate=True, decode=True) }
+        return { 'fulltext' : utils.text_cleanup(self.source_content, translate=True, decode=True) }
 
 class FileBasedExtractor(Extractor):
 
@@ -288,7 +288,7 @@ class PlainTextExtractor(FileBasedExtractor):
         if not self.source_loaded:
             self.load_source()
 
-        return { 'body' : utils.text_cleanup(self.source_content, translate=True, decode=True) }
+        return { 'fulltext' : utils.text_cleanup(self.source_content, translate=True, decode=True) }
 
 class PdfExtractor(FileBasedExtractor):
     
@@ -341,7 +341,7 @@ class PdfExtractor(FileBasedExtractor):
         if not self.source_loaded:
             self.load_source()
         log.debug("source loaded for %s", self.bibcode)
-        return { 'body' : utils.text_cleanup(self.source_content, translate=True, decode=True) }    
+        return { 'fulltext' : utils.text_cleanup(self.source_content, translate=True, decode=True) }    
     
 class XMLExtractor(FileBasedExtractor):
 
@@ -391,10 +391,10 @@ class XMLExtractor(FileBasedExtractor):
         
         contents = {}
         body = self.extract_body_content(root) 
-        contents['body'] = utils.text_cleanup(body)
+        contents['fulltext'] = utils.text_cleanup(body)
 
         ack = self.extract_ack_content(root)
-        contents['ack'] = utils.text_cleanup(ack)
+        contents['acknowledgements'] = utils.text_cleanup(ack)
 
         return contents
 
@@ -538,7 +538,7 @@ class HtmlExtractor(FileBasedExtractor):
             self.load_source()
 
         body = self.parse_article_text() 
-        return { 'body' : utils.text_cleanup(body) }
+        return { 'fulltext' : utils.text_cleanup(body) }
 
 
     

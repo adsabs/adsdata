@@ -38,7 +38,7 @@ class Worker(Process):
             
             extract_dir = config['FULLTEXT_EXTRACT_PATH'] + ptree.id2ptree(doc['bibcode'])
             meta_path = os.path.join(extract_dir, 'meta.json')
-            log.info("meta path: %s", meta_path)
+            log.debug("meta path: %s", meta_path)
             
             # dry-run testing
 #            self.queue.task_done()
@@ -139,6 +139,9 @@ def init(opts):
     for w in workers:
         w.join()
         
+    log.info("processed: %d" % stats['processed'])
+    log.info("records with no existing extract dir: %d" % stats['missing'])        
+    
 if __name__ == '__main__':
 
     op = OptionParser()
