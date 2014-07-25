@@ -1,10 +1,11 @@
-pip>=1.4.1
-SQLAlchemy>=0.7.3
-MongoAlchemy>=0.13.3
 pytz
-unittest2
+pika
+mongobox
 nose
--e git+https://github.com/theorm/mongobox.git#egg=mongobox
-Flask==0.10.1
-simplejson
-mock>=1.0.1
+mock
+pymongo
+httplib2
+lxml
+ptree
+MongoAlchemy==0.13.3
+BeautifulSoup

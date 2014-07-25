@@ -7,7 +7,6 @@ BASEPATH=`dirname $SCRIPTPATH`
 # activate our virtualenv
 . `dirname $BASEPATH`/python/bin/activate
 
-FROM_MONGO="mongodb://adszee:27017/solr4ads"
 LOCKFILE="$SCRIPTPATH/.build_sync.lock"
 
 # save PID in lockfile
@@ -19,8 +18,8 @@ LOCKFILE="$SCRIPTPATH/.build_sync.lock"
 echo "#############" `date` ": synching data sources #################"
 python $BASEPATH/scripts/sync_mongo_data.py "$@" sync
 
-echo "#############" `date` ": copying fulltext ###################"
-python $BASEPATH/scripts/copy_fulltext.py "$@"
+#echo "#############" `date` ": extracting fulltext ###################"
+#python $BASEPATH/scripts/extract_fulltext.py "$@" extract
 
 echo "#############" `date` ": building docs collection ###################"
 python $BASEPATH/scripts/build_docs.py "$@" build

@@ -15,7 +15,6 @@ from optparse import OptionParser
 from multiprocessing import Process, JoinableQueue, cpu_count
 
 from adsdata import utils, models
-from adsdata.exceptions import *
 
 commands = utils.commandList()
 
@@ -45,8 +44,6 @@ class Builder(Process):
                 if self.do_metrics:
                     metrics = self.session.generate_metrics_data(bibcode)
                     self.session.store(metrics, self.session.metrics_data)
-            except DocDataException, e:
-                log.error("Something went wrong building %s: %s", bibcode, e)
             except:
                 log.error("Something went wrong building %s", bibcode)
                 raise
@@ -152,10 +149,9 @@ if __name__ == "__main__":
         help='capture exec profile in a call graph image', default=False)
     opts, args = op.parse_args() 
     
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    config = utils.load_config(os.path.join(base_dir, 'adsdata.cfg'))
+    config = utils.load_config()
 
-    log = utils.init_logging(base_dir, __file__, opts.verbose, opts.debug)
+    log = utils.init_logging(utils.base_dir(), __file__, opts.verbose, opts.debug)
     if opts.debug:
         log.setLevel(logging.DEBUG)
 

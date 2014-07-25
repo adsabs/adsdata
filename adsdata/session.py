@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="mongoalch
 import pytz
 import logging
 import hashlib
-import simplejson
+from json import dumps
 from bson import DBRef
 from datetime import datetime
 from mongoalchemy.session import Session
@@ -104,8 +104,8 @@ class DataSession(object):
         record["_digest"] = record_digest(record, self.db)
         spec = {'_id': record['_id'] } #, '_digest': digest}
         
-        # look for existing doc 
-        existing = collection.find_one(spec, manipulate=False)
+        # look for existing doc; fetch only id & _digest values
+        existing = collection.find_one(spec, { "_digest": 1 }, manipulate=False)
         if existing:
             # do the digest values match?
             if existing.has_key("_digest") and existing["_digest"] == record["_digest"]:
@@ -195,7 +195,7 @@ def record_digest(record, db, hashtype='sha1'):
             
     h = hashlib.new(hashtype)
     # sort_keys=True should make this deterministic?
-    json = simplejson.dumps(digest_record, sort_keys=True)
+    json = dumps(digest_record, sort_keys=True)
     h.update(json)
     return h.hexdigest()                
 

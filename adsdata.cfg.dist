@@ -12,6 +12,9 @@ ADSZEE_MONGO_URI = mongodb://user:pass@host/db
 ADSDATA_MONGO_DATA_LOAD_BATCH_SIZE = 100000
 ADSDATA_TMP_DIR = 
 
+FULLTEXT_EXTRACT_PATH = /path/to/fulltext/extracted
+RABBITMQ_URI = amqp://user:pass@localhost:5672
+
 [collections]
 bibstems: /proj/ads_abstracts/config/bibstems.dat
 fulltext_links: /proj/ads_abstracts/config/links/fulltext/all.links
@@ -29,3 +32,6 @@ grants:/proj/ads_abstracts/config/links/grants/all.links
 simbad_object_ids: /proj/ads_abstracts/config/links/simbad/simbad_object_ids.tab
 bibstems_ranked: /proj/ads_abstracts/config/links/citation/bibstems_rank.tsv
 authors: /proj/ads/abstracts/config/links/facet_authors/all.links
+
+[fulltext]
+

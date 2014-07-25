@@ -93,10 +93,9 @@ if __name__ == "__main__":
     op.add_option('-v','--verbose', dest="verbose", action="store_true", default=False)
     opts, args = op.parse_args() 
     
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    config = utils.load_config(os.path.join(base_dir, 'adsdata.cfg'))
+    config = utils.load_config()
 
-    log = utils.init_logging(base_dir, __file__, opts.verbose, opts.debug)
+    log = utils.init_logging(utils.base_dir(), __file__, None, opts.verbose, opts.debug)
     if opts.debug:
         log.setLevel(logging.DEBUG)
     

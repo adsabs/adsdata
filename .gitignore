@@ -3,6 +3,8 @@
 .pydevproject
 .settings/
 
+*ipynb*
+logs/
 adsdata.cfg
 local_config.py
 test/demo_collections/*.tsv
