@@ -48,6 +48,7 @@ class Extractor():
         self.extract_dir = config['FULLTEXT_EXTRACT_PATH'] + ptree.id2ptree(bibcode)
         self.source_loaded = False
         self.source_content = None
+        self.dry_run = False
         
         self.check_source_exists()
 
@@ -92,17 +93,19 @@ class Extractor():
         return os.path.join(self.extract_dir, "%s.txt" % field)
     
     def init_path(self):
-        try:
-            os.makedirs(self.extract_dir)
-        except IOError, e:
-            if e.errno == errno.EEXIST and os.path.isdir(self.extract_dir):
-                # another process beat us. no big deal.
-                pass
-            else:
-                log.debug("Failed initializing target extraction dir: %s", str(e))
-                raise
         meta = { 'ft_source': self.ft_source, 'provider': self.provider }
-        self.write_meta(meta)
+        if not self.dry_run:
+            try:
+                os.makedirs(self.extract_dir)
+                self.write_meta(meta)
+            except IOError, e:
+                if e.errno == errno.EEXIST and os.path.isdir(self.extract_dir):
+                    # another process beat us. no big deal.
+                    pass
+                else:
+                    log.debug("Failed initializing target extraction dir: %s", str(e))
+                    raise
+        return meta
             
     def get_meta(self):
         with open(self.meta_path(), 'r') as f:
@@ -173,6 +176,8 @@ class Extractor():
         """
         use the basic write-replace method 
         """
+        if self.dry_run:
+            return
         with NamedTemporaryFile('w', dir=self.extract_dir, delete=False) as tf:
             try:
                 tf.write(contents)
@@ -187,7 +192,9 @@ class Extractor():
         
         if not os.path.exists(self.meta_path()):
             log.debug("initializing meta path for %s", self.bibcode)
-            self.init_path()
+            meta = self.init_path()
+        else:
+            meta = self.get_meta()
             
         log.debug("extracting contents of %s from %s", self.bibcode, self.ft_source)
         contents = self.get_contents()
@@ -195,7 +202,6 @@ class Extractor():
             log.debug("Nothing extracted")
             return
         
-        meta = self.get_meta()
         record_updated = False
         try:
             for field, text in contents.items():

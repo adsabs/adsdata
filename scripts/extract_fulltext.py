@@ -37,6 +37,10 @@ class ExtractWorker(Process):
             ext = None
             try:
                 ext = Extractor.factory(*ft_item)
+                
+                if self.opts.dry_run:
+                    ext.dry_run = True
+                    
                 self.thread_lock.acquire()
                 try:
                     if not self.opts.force and not ext.needs_extraction(self.opts.force_older_than):
@@ -125,29 +129,31 @@ def extract(opts):
     
     log.info("All work complete")
     
-    if len(updates):
+    if len(updates): # and not opts.dry_run:
         log.info("Publishing list of updated records")
         utils.publish_updates(list(updates))
     
 if __name__ == '__main__':
 
     op = OptionParser()
-    op.set_usage("usage: generate.py [options] ")
-    op.add_option('--infile', dest='infile', action='store',
+    op.set_usage("usage: extract_fulltext.py [options] ")
+    op.add_option('-i','--infile', dest='infile', action='store',
         help='generate from urls/paths in this file')
     op.add_option('-v','--verbose', dest='verbose', action='store_true',
         help='write log output to stdout', default=False)
     op.add_option('-d','--debug', dest='debug', action='store_true',
         help='include debugging info in log output', default=False)
     op.add_option('-l','--limit', dest="limit", action="store", type=int)
-    op.add_option('--force', dest='force', action='store_true',
+    op.add_option('-f','--force', dest='force', action='store_true',
         help='ignore modtimes', default=False)
-    op.add_option('--clobber', dest='clobber', action='store_true',
+    op.add_option('-c','--clobber', dest='clobber', action='store_true',
         help='ignore empty content (always overwrite)', default=False)
+    op.add_option('-n','--dry_run', dest='dry_run', action='store_true',
+        help='go through all the motions but don\'t write anything to disk', default=False)
     op.add_option('--force_older_than', dest='force_older_than', action='store',
         help='generate docs w/ last generated prior to date in format %Y-%m-%d %H:%M:%S %Z')
-    op.add_option('--threads', dest='threads', action='store', type=int,
-        help='number of threads to use for generating & storing', default=8)
+    op.add_option('-t','--threads', dest='threads', action='store', type=int,
+        help='number of threads to use for extracting (default=8)', default=8)
     opts, args = op.parse_args()
 
     log = utils.init_logging(utils.base_dir(), __file__, None, opts.verbose, opts.debug)
