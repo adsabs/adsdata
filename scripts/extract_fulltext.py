@@ -154,6 +154,8 @@ if __name__ == '__main__':
         help='generate docs w/ last generated prior to date in format %Y-%m-%d %H:%M:%S %Z')
     op.add_option('-t','--threads', dest='threads', action='store', type=int,
         help='number of threads to use for extracting (default=8)', default=8)
+    op.add_option('--pygraph', dest='pygraph', action='store_true',
+        help='capture exec profile in a call graph image', default=False)
     opts, args = op.parse_args()
 
     log = utils.init_logging(utils.base_dir(), __file__, None, opts.verbose, opts.debug)
@@ -178,8 +180,15 @@ if __name__ == '__main__':
     start_cpu = time.clock()
     start_real = time.time()
 
-    commands.map[cmd](opts)
+    if opts.pygraph:
+        from pycallgraph import PyCallGraph
+        from pycallgraph.output import GraphvizOutput
+        with PyCallGraph(output=GraphvizOutput()):
+            commands.map[cmd](opts)
+    else:
+        commands.map[cmd](opts)
 
+        
     end_cpu = time.clock()
     end_real = time.time()
     

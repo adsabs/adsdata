@@ -44,13 +44,15 @@ class Extractor():
         self.bibcode = bibcode
         self.ft_source = ft_source
         self.provider = provider
-#        self.extract_dir = os.path.join(config['FULLTEXT_EXTRACT_PATH'], ptree.id2ptree(bibcode))
         self.extract_dir = config['FULLTEXT_EXTRACT_PATH'] + ptree.id2ptree(bibcode)
+        self.meta_path = os.path.join(self.extract_dir, 'meta.json')
         self.source_loaded = False
         self.source_content = None
         self.dry_run = False
         
         self.check_source_exists()
+        self.last_extracted = self.get_last_extracted()
+        log.debug("%s last extracted: %s", self.bibcode, self.last_extracted)
 
     @classmethod
     def factory(cls, bibcode, ft_source, provider):
@@ -86,9 +88,6 @@ class Extractor():
         if not os.path.exists(self.ft_source):
             raise FulltextSourceNotFound("no source file found for %s at %s" % (self.bibcode, self.ft_source))
         
-    def meta_path(self):
-        return os.path.join(self.extract_dir, 'meta.json')
-
     def content_path(self, field):
         return os.path.join(self.extract_dir, "%s.txt" % field)
     
@@ -108,31 +107,27 @@ class Extractor():
         return meta
             
     def get_meta(self):
-        with open(self.meta_path(), 'r') as f:
+        with open(self.meta_path, 'r') as f:
             return json.load(f)
     
-    def last_extracted(self):
-        if os.path.exists(self.meta_path()):
-            return utils.mod_time(self.meta_path())
-        return None
+    def get_last_extracted(self):
+        try:
+            return utils.mod_time(self.meta_path)
+        except OSError, e:
+            if e.errno == errno.ENOENT:
+                return None
+            raise
 
     def needs_extraction(self, force_older_than=None):
 
-        if not os.path.exists(self.meta_path()):
-            log.debug("extracting %s because no existing meta file", self.bibcode)
-            return True
-            
-        last_extracted = self.last_extracted()
-        log.debug("%s last extracted: %s", self.bibcode, last_extracted)
-        
-        if not last_extracted:
+        if self.last_extracted is None:
             log.debug("extracting %s because last_extracted unknown", self.bibcode)
             return True
 
         if force_older_than:
-            if last_extracted < force_older_than:
+            if self.last_extracted < force_older_than:
                 log.debug("extracting %s because last_extracted %s is older than %s", 
-                          self.bibcode, last_extracted, force_older_than)
+                          self.bibcode, self.last_extracted, force_older_than)
                 return True
 
         meta = self.get_meta()
@@ -168,9 +163,8 @@ class Extractor():
         self.write_file(cpath, text.encode('utf-8'))
     
     def write_meta(self, meta):
-        mpath = self.meta_path()
-        log.debug("writing %s meta to %s", self.bibcode, mpath)
-        self.write_file(mpath, json.dumps(meta))
+        log.debug("writing %s meta to %s", self.bibcode, self.meta_path)
+        self.write_file(self.meta_path, json.dumps(meta))
         
     def write_file(self, path, contents):
         """
@@ -190,7 +184,7 @@ class Extractor():
         
     def extract(self, clobber=False):
         
-        if not os.path.exists(self.meta_path()):
+        if not os.path.exists(self.meta_path):
             log.debug("initializing meta path for %s", self.bibcode)
             meta = self.init_path()
         else:
@@ -238,9 +232,8 @@ class HttpExtractor(Extractor):
         req_headers = {'User-Agent': 'ADSClient', 'Accept': 'text/plain'}
 
         if only_if_modified:
-            last_extracted = self.last_extracted()
-            if last_extracted is not None:
-                last_extracted_str = last_extracted.strftime('%a, %d %b %Y %H:%M:%S %Z')
+            if self.last_extracted is not None:
+                last_extracted_str = self.last_extracted.strftime('%a, %d %b %Y %H:%M:%S %Z')
                 log.debug("setting if-modified-since: %s" % last_extracted_str)
                 req_headers['If-Modified-Since'] = last_extracted_str
 
@@ -248,8 +241,6 @@ class HttpExtractor(Extractor):
         (resp_headers, resp) = http.request(
             self.ft_source, method="GET", 
             headers=req_headers)
-
-        log.debug("resp status: %s" % resp_headers['status'])
 
         if resp_headers['status'] == '200':
             self.source_content = resp
@@ -275,8 +266,7 @@ class FileBasedExtractor(Extractor):
         source_mtime = utils.mod_time(self.ft_source) + offset
         log.debug("mtime of %s source file %s: %s", self.bibcode, self.ft_source, source_mtime)
 
-        last_extracted = self.last_extracted()
-        if not last_extracted or source_mtime > last_extracted:
+        if not self.last_extracted or source_mtime > self.last_extracted:
             return True
         return False
 
@@ -304,21 +294,6 @@ class PdfExtractor(FileBasedExtractor):
         """
         log.debug("got response for %s on %s", self.bibcode, method.routing_key)
         self.source_content = body
-        log.debug("assigned source content of lenght: %d", len(body))
-#        self.channel.basic_cancel(consumer_tag=self._consumer_tag, nowait=True)
-#            self.channel.basic_ack(delivery_tag=method.delivery_tag)
-#            self.channel.basic_cancel(consumer_tag=self._consumer_tag)
-#        try:
-#            # tell rabbitmq we're done with this queue and delete it
-#            log.debug("cancelling consumption of %s...", method.routing_key)
-#            self.channel.basic_cancel(consumer_tag=self._consumer_tag)
-#            log.debug("deleting %s...", method.routing_key)
-#            self.channel.queue_delete(queue=method.routing_key)
-#        except Exception, e:
-#            log.debug("failed cancelling/deleting %s: %s", method.routing_key, str(e))
-#        else:
-#            log.debug("rejected!")
-#            self.channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
             
     def load_source(self):
         import pika 
@@ -333,7 +308,6 @@ class PdfExtractor(FileBasedExtractor):
         
         msg = json.dumps({ 'bibcode': self.bibcode, 'ft_source': self.ft_source })
         properties = pika.BasicProperties(reply_to=callback_queue)
-        log.debug("properties: %s" % str(properties))
         self.channel.basic_publish(exchange='',
                               routing_key="extract_pdf",
                               properties=properties,
@@ -346,7 +320,6 @@ class PdfExtractor(FileBasedExtractor):
 
         if not self.source_loaded:
             self.load_source()
-        log.debug("source loaded for %s", self.bibcode)
         return { 'fulltext' : utils.text_cleanup(self.source_content, translate=True, decode=True) }    
     
 class XMLExtractor(FileBasedExtractor):
@@ -448,8 +421,7 @@ class HtmlExtractor(FileBasedExtractor):
         compares the mod time of the record's meta file vs. the mod time
         of the each listed source file
         """
-        last_extracted = self.last_extracted()
-        if not last_extracted:
+        if not self.last_extracted:
             return True
         offset = datetime.utcnow() - datetime.now()
 
@@ -457,7 +429,7 @@ class HtmlExtractor(FileBasedExtractor):
             source_mtime = utils.mod_time(source_file) + offset
             log.debug("%s source mtime: %s" % (source_file, source_mtime))
 
-            if source_mtime > last_extracted:
+            if source_mtime > self.last_extracted:
                 return True
         return False
     
