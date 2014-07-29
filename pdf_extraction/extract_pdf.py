@@ -13,7 +13,7 @@ import json
 import logging
 from adsdata import utils
 from optparse import OptionParser
-from traceback import format_stack
+from traceback import format_exc
 
 import java.io
 from java.lang import String
@@ -43,27 +43,22 @@ class PdfExtractor(Callable):
     def call(self):
         log = logging.getLogger()
         self.channel.basicConsume(opts.queue_name, False, self.consumer)
-        log.info("Awaiting pdf extraction tasks...")
+        log.info("Awaiting pdf extraction tasks on %s...", opts.queue_name)
         while True:
             delivery = self.consumer.nextDelivery()
             props = delivery.getProperties()
-            msg = String(delivery.getBody())
-#            reply_props = BasicProperties.Builder().correlationId(props.getCorrelationId()).build()
+            task = String(delivery.getBody())
             reply_props = BasicProperties.Builder().build()
             try:
-                task_data = json.loads(str(msg))
+                task_data = json.loads(str(task))
                 log.debug("got task: %s", str(task_data))
-                
                 resp = self.extract(task_data['bibcode'], task_data['ft_source'])
                 self.channel.basicPublish("", props.getReplyTo(), reply_props, resp)
             except Exception, e:
-                headers = HashMap()
-                headers.put("exception", str(e))
-                headers.put("stacktrace", format_stack())
-                log.debug("returning error response: %s" % str(headers))
-#                error_props = BasicProperties.Buidler().correlationId(props.getCorrelationId()).headers(headers).build()
-                error_props = BasicProperties.Buidler().headers(headers).build()
-                self.channel.basicPublish("", props.getReplyTo(), error_props, "something went wrong")
+                msg = format_exc()
+                log.debug("returning error response: %s" % str(msg))
+                error_props = BasicProperties.Builder().type("exception").build()
+                pub = self.channel.basicPublish("", props.getReplyTo(), error_props, msg)
             finally:
                 log.debug("acknowledging task processed")
                 self.channel.basicAck(delivery.getEnvelope().getDeliveryTag(), False)

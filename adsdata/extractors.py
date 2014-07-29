@@ -37,6 +37,9 @@ class FulltextContentsNotFound(Exception):
 class FulltextSourceNotFound(Exception):
     pass
 
+class PdfExtractException(Exception):
+    pass
+
 class Extractor():
     
     def __init__(self, bibcode, ft_source, provider):
@@ -50,7 +53,6 @@ class Extractor():
         self.source_content = None
         self.dry_run = False
         
-        self.check_source_exists()
         self.last_extracted = self.get_last_extracted()
         log.debug("%s last extracted: %s", self.bibcode, self.last_extracted)
 
@@ -84,10 +86,6 @@ class Extractor():
         raise UnknownSourceTypeException(
             "don't know what generator class to use for %s, %s, %s", bibcode, ft_source, provider)
 
-    def check_source_exists(self):
-        if not os.path.exists(self.ft_source):
-            raise FulltextSourceNotFound("no source file found for %s at %s" % (self.bibcode, self.ft_source))
-        
     def content_path(self, field):
         return os.path.join(self.extract_dir, "%s.txt" % field)
     
@@ -262,6 +260,9 @@ class FileBasedExtractor(Extractor):
         compares the mod time of the record's meta file vs. the mod time
         of the source
         """
+        if not os.path.exists(self.ft_source):
+            raise FulltextSourceNotFound("no source file found for %s at %s" % (self.bibcode, self.ft_source))
+        
         offset = datetime.utcnow() - datetime.now()
         source_mtime = utils.mod_time(self.ft_source) + offset
         log.debug("mtime of %s source file %s: %s", self.bibcode, self.ft_source, source_mtime)
@@ -293,12 +294,12 @@ class PdfExtractor(FileBasedExtractor):
         callback method that consumes responses from the extraction workers
         """
         log.debug("got response for %s on %s", self.bibcode, method.routing_key)
+        if props.type == 'exception':
+            raise PdfExtractException(body)
         self.source_content = body
             
     def load_source(self):
         import pika 
-        
-        log.debug("queueing %s for pdf extraction" % self.bibcode)
         
         self.channel = utils.rabbitmq_channel()
         res = self.channel.queue_declare(auto_delete=True)
@@ -306,10 +307,17 @@ class PdfExtractor(FileBasedExtractor):
         log.debug("created callback_queue: %s" % callback_queue)
         self._consumer_tag = self.channel.basic_consume(self._on_response, no_ack=True, queue=callback_queue)
         
+        if 'RABBITMQ_PDF_QUEUE' in os.environ:
+            pdf_queue_name = os.environ['RABBITMQ_PDF_QUEUE']
+        else:
+            pdf_queue_name = config['RABBITMQ_PDF_QUEUE']
+            
+        log.debug("queueing %s for pdf extraction on %s", self.bibcode, pdf_queue_name)
+        
         msg = json.dumps({ 'bibcode': self.bibcode, 'ft_source': self.ft_source })
         properties = pika.BasicProperties(reply_to=callback_queue)
         self.channel.basic_publish(exchange='',
-                              routing_key="extract_pdf",
+                              routing_key=pdf_queue_name,
                               properties=properties,
                               body=msg)
         log.debug("waiting for responses...")
@@ -423,12 +431,15 @@ class HtmlExtractor(FileBasedExtractor):
         """
         if not self.last_extracted:
             return True
+        
+        source_files = re.split('\s*,\s*', self.ft_source)
         offset = datetime.utcnow() - datetime.now()
-
-        for source_file in re.split('\s*,\s*', self.ft_source):
-            source_mtime = utils.mod_time(source_file) + offset
-            log.debug("%s source mtime: %s" % (source_file, source_mtime))
-
+        
+        for sf in source_files:
+            if not os.path.exists(sf):
+                raise FulltextSourceNotFound("no source file found for %s at %s" % (self.bibcode, sf))
+            source_mtime = utils.mod_time(sf) + offset
+            log.debug("%s source mtime: %s" % (sf, source_mtime))
             if source_mtime > self.last_extracted:
                 return True
         return False
@@ -504,12 +515,6 @@ class HtmlExtractor(FileBasedExtractor):
 
         self.source_loaded = True
 
-    def check_source_exists(self):
-        source_files = re.split('\s*,\s*', self.ft_source)
-        for sf in source_files:
-            if not os.path.exists(sf):
-                raise FulltextSourceNotFound("no source file found for %s at %s" % (self.bibcode, sf))
-        
     def get_contents(self):
 
         if not self.source_loaded:

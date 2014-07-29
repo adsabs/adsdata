@@ -6,6 +6,7 @@ import sys
 import time
 import logging
 import itertools
+import traceback
 from datetime import datetime
 from optparse import OptionParser
 from multiprocessing import Process, JoinableQueue, Lock, Manager
@@ -54,8 +55,7 @@ class ExtractWorker(Process):
                 
             except Exception, e:
                 bibcode, ft_source, provider = ft_item
-                msg = "something went wrong extracting %s: %s %s" % (bibcode, type(e), str(e))
-                log.error(msg)
+                log.error("something went wrong extracting %s: %s", bibcode, traceback.format_exc())
                 self.stats['exceptions'] += 1
             finally:
                 self.stats['processed'] += 1
