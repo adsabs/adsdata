@@ -153,7 +153,7 @@ if __name__ == '__main__':
     op.add_option('--force_older_than', dest='force_older_than', action='store',
         help='generate docs w/ last generated prior to date in format %Y-%m-%d %H:%M:%S %Z')
     op.add_option('-t','--threads', dest='threads', action='store', type=int,
-        help='number of threads to use for extracting (default=8)', default=8)
+        help='number of threads to use for extracting (default=12)', default=13)
     op.add_option('--pygraph', dest='pygraph', action='store_true',
         help='capture exec profile in a call graph image', default=False)
     opts, args = op.parse_args()
