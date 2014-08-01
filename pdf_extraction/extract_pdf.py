@@ -146,7 +146,7 @@ if __name__ == '__main__':
     op.add_option('-w','--workers', dest='workers', action='store', type=int,
         help='number of workers to use for extracting', default=4)
     op.add_option('-q','--queue_name', dest='queue_name', action='store', type=str,
-        help='consume tasks from this queue', default="extract_pdf")
+        help='consume tasks from this queue', default=config['RABBITMQ_PDF_QUEUE'])
 
     opts, args = op.parse_args()
     

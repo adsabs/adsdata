@@ -14,6 +14,7 @@ ADSDATA_TMP_DIR =
 
 FULLTEXT_EXTRACT_PATH = /path/to/fulltext/extracted
 RABBITMQ_URI = amqp://user:pass@localhost:5672
+RABBITMG_PDF_QUEUE = "extract_pdf"
 
 [collections]
 bibstems: /proj/ads_abstracts/config/bibstems.dat
