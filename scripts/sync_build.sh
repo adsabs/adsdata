@@ -18,9 +18,6 @@ LOCKFILE="$SCRIPTPATH/.build_sync.lock"
 echo "#############" `date` ": synching data sources #################"
 python $BASEPATH/scripts/sync_mongo_data.py "$@" sync
 
-#echo "#############" `date` ": extracting fulltext ###################"
-#python $BASEPATH/scripts/extract_fulltext.py "$@" extract
-
 echo "#############" `date` ": building docs collection ###################"
 python $BASEPATH/scripts/build_docs.py "$@" build
 
