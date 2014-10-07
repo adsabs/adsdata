@@ -24,5 +24,7 @@ python $BASEPATH/scripts/build_docs.py "$@" build
 echo "#############" `date` ": processing deletions ###################"
 python $BASEPATH/scripts/deletions.py "$@" delete
 
+echo "#############" `date` ": script completed ###################"
+
 /proj/ads/soft/bin/rmlock -d $SCRIPTPATH .adsdata.lock $$
 
