@@ -20,12 +20,13 @@ commands = utils.commandList()
 
 class Builder(Process):
     
-    def __init__(self, task_queue, result_queue, do_docs=True, do_metrics=True):
+    def __init__(self, task_queue, result_queue, do_docs=True, do_metrics=True, publish_to_solr=True):
         Process.__init__(self)
         self.do_docs = do_docs
         self.do_metrics = do_metrics
         self.task_queue = task_queue
         self.result_queue = result_queue
+        self.publish_to_solr = publish_to_solr
         self.session = utils.get_session(config)
         
     def run(self):
@@ -44,6 +45,11 @@ class Builder(Process):
                 if self.do_metrics:
                     metrics = self.session.generate_metrics_data(bibcode)
                     self.session.store(metrics, self.session.metrics_data)
+                if self.publish_to_solr:
+                    try:
+                        publish_to_rabbitmq(bibcode)
+                    except Exception, e:
+                        log.error("Publish to rabbitmq failed: %s, %s" % (bibcode,e))
             except:
                 log.error("Something went wrong building %s", bibcode)
                 raise
@@ -51,6 +57,14 @@ class Builder(Process):
                 self.task_queue.task_done()
                 log.debug("task queue size: %d", self.task_queue.qsize())
         return
+
+def publish_to_rabbitmq(bibcode,exchange='MergerPipelineExchange',route='SolrUpdateRoute'):
+  import pika
+  url='amqp://admin:password@localhost:5672/%2F'
+  connection = pika.BlockingConnection(pika.URLParameters(url))
+  channel = connection.channel()
+  channel.basic_publish(exchange,route,bibcode)
+  connection.close()
 
 def get_bibcodes(opts):
     
