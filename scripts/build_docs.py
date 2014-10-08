@@ -39,13 +39,15 @@ class Builder(Process):
                 break
             log.info("Worker %s: working on %s", self.name, bibcode)
             try:
+                doc_updated = False
+                metrics_updated = False
                 if self.do_docs:
                     doc = self.session.generate_doc(bibcode)
-                    self.session.store(doc, self.session.docs)
+                    docs_updated = self.session.store(doc, self.session.docs)
                 if self.do_metrics:
                     metrics = self.session.generate_metrics_data(bibcode)
-                    self.session.store(metrics, self.session.metrics_data)
-                if self.publish_to_solr:
+                    metrics_updated = self.session.store(metrics, self.session.metrics_data)
+                if self.publish_to_solr and (docs_updated or metrics_updated):
                     try:
                         publish_to_rabbitmq(bibcode)
                     except Exception, e:
@@ -59,11 +61,11 @@ class Builder(Process):
         return
 
 def publish_to_rabbitmq(bibcode,exchange='MergerPipelineExchange',route='SolrUpdateRoute'):
-  import pika
+  import pika, json
   url='amqp://admin:password@localhost:5672/%2F'
   connection = pika.BlockingConnection(pika.URLParameters(url))
   channel = connection.channel()
-  channel.basic_publish(exchange,route,bibcode)
+  channel.basic_publish(exchange,route,json.dumps([bibcode]))
   connection.close()
 
 def get_bibcodes(opts):

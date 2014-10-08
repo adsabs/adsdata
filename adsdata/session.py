@@ -111,14 +111,15 @@ class DataSession(object):
             if existing.has_key("_digest") and existing["_digest"] == record["_digest"]:
                 # no change; do nothing
                 log.debug("Digest match. No change to %s", str(spec))
-                return
+                return False
             elif existing.has_key("_digest"):
                 # add existing digest value to spec to avoid race conditions
                 spec['_digest'] = existing["_digest"]
         
         # NOTE: even for cases where there was no existing doc we need to do an 
         # upsert to avoid race conditions
-        return collection.update(spec, record, manipulate=True, upsert=True)
+        collection.update(spec, record, manipulate=True, upsert=True)
+        return True
 
 class DatetimeInjector(SONManipulator):
     """
