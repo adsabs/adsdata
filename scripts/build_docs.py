@@ -47,7 +47,10 @@ class Builder(Process):
                 if self.do_metrics:
                     metrics = self.session.generate_metrics_data(bibcode)
                     metrics_updated = self.session.store(metrics, self.session.metrics_data)
-                if self.publish_to_solr and (docs_updated or metrics_updated):
+                # for the time being the metrics collection is not indexed in solr,
+                # so no need to publish when there is an update to it
+                # if self.publish_to_solr and (docs_updated or metrics_updated):
+                if self.publish_to_solr and docs_updated:
                     try:
                         publish_to_rabbitmq(bibcode)
                     except Exception, e:
