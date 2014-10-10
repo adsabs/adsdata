@@ -30,7 +30,7 @@ eprint_mapping:/proj/ads_abstracts/config/links/preprint/arxiv.dat
 reads:/proj/ads_abstracts/config/links/reads/all.links
 downloads:/proj/ads_abstracts/config/links/reads/downloads.links
 grants:/proj/ads_abstracts/config/links/grants/all.links
-simbad_object_ids: /proj/ads_abstracts/config/links/simbad/simbad_object_ids.tab
+simbad_objects: /proj/ads_abstracts/config/links/simbad/simbad_objects.tab
 bibstems_ranked: /proj/ads_abstracts/config/links/citation/bibstems_rank.tsv
 authors: /proj/ads/abstracts/config/links/facet_authors/all.links
 

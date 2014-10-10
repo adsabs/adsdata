@@ -458,10 +458,6 @@ class DocMetrics(DataFileCollection, DocsDataCollection):
     read_count = fields.IntField(default=0)
     norm_cites = fields.IntField(default=0)
     
-    # override the default float constructor so that we can control the precision
-    # otherwise the boost value is changing constantly and triggering doc timestamp changes
-    boost.constructor = lambda x: round(float(x), 4)
-    
     config_collection_name = 'docmetrics'
     field_order = [bibcode,boost,citation_count,read_count,norm_cites]
     docs_fields = [boost, citation_count, read_count, norm_cites]
@@ -469,7 +465,7 @@ class DocMetrics(DataFileCollection, DocsDataCollection):
     def __str__(self):
         return "DocMetrics(%s): %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
 
-# add Simbad Object ids
+# Obsolete
 class SimbadObjectIDs(DataFileCollection, DocsDataCollection):
     
     bibcode = fields.StringField(_id=True)
@@ -488,6 +484,26 @@ class SimbadObjectIDs(DataFileCollection, DocsDataCollection):
         target_collection_name = cls.config_collection_name
         utils.map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'simbad_object_ids')
     
+class SimbadObjects(DataFileCollection, DocsDataCollection):
+    
+    bibcode = fields.StringField(_id=True)
+    type = fields.StringField()
+    id = fields.StringField()
+    simbad_objects = fields.ListField(fields.DictField(fields.StringField()))
+    
+    aggregated = True
+    config_collection_name = "simbad_objects"
+    field_order = [bibcode, id, type]
+    docs_fields = [simbad_objects]
+    
+    @classmethod
+    def post_load_data(cls, session, source_collection):
+        target_collection_name = cls.config_collection_name
+        utils.map_reduce_dictify(session, source_collection, target_collection_name, 'load_key', ['id', 'type'], 'simbad_objects')
+    
+    def __str__(self):
+        return "Simbad_objs(%s): %s, %s" % (self.bibcode, self.type, self.id)
+
 
 class Accno(DataFileCollection):
 
