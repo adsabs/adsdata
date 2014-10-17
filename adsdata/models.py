@@ -465,25 +465,6 @@ class DocMetrics(DataFileCollection, DocsDataCollection):
     def __str__(self):
         return "DocMetrics(%s): %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
 
-# Obsolete
-class SimbadObjectIDs(DataFileCollection, DocsDataCollection):
-    
-    bibcode = fields.StringField(_id=True)
-    simbad_object_ids = fields.ListField(fields.IntField())
-    
-    aggregated = True
-    config_collection_name = 'simbad_object_ids'
-    field_order = [bibcode, simbad_object_ids]
-    docs_fields = [simbad_object_ids]
-    
-    def __str__(self):
-        return "Simbad_objs(%s): [%s]" % (self.bibcode, self.simbad_object_ids)
-    
-    @classmethod
-    def post_load_data(cls, session, source_collection):
-        target_collection_name = cls.config_collection_name
-        utils.map_reduce_listify(session, source_collection, target_collection_name, 'load_key', 'simbad_object_ids')
-    
 class SimbadObjects(DataFileCollection, DocsDataCollection):
     
     bibcode = fields.StringField(_id=True)
