@@ -11,3 +11,4 @@ MongoAlchemy==0.13.3
 BeautifulSoup
 alembic
 psycopg2 #requires libpq-dev
+SqlAlchemy

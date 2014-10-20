@@ -13,8 +13,11 @@ import logging
 import itertools
 from optparse import OptionParser
 from multiprocessing import Process, JoinableQueue, cpu_count
+import traceback
 
 from adsdata import utils, models
+from adsdata import psql_session
+
 
 commands = utils.commandList()
 
@@ -47,6 +50,10 @@ class Builder(Process):
                 if self.do_metrics:
                     metrics = self.session.generate_metrics_data(bibcode)
                     metrics_updated = self.session.store(metrics, self.session.metrics_data)
+                    try:
+                        psql_session.save(metrics)
+                    except:
+                        log.error("Error on %s: %s" % (bibcode,traceback.format_exc()))
                 # for the time being the metrics collection is not indexed in solr,
                 # so no need to publish when there is an update to it
                 # if self.publish_to_solr and (docs_updated or metrics_updated):
