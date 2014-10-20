@@ -3,6 +3,8 @@ import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 
 from psql_models import Metrics
 
@@ -45,10 +47,12 @@ def save(record):
   
   #Manipulate the data a little bit
   record['bibcode'] = record['_id']
-  del record[_id]
+  del record['_id']
+  if '_digest' in record:
+    del record['_digest']
 
   record['modtime'] = datetime.datetime.now()
 
-  session.save(**record)
+  session.add(Metrics(**record))
   session.commit()
   session.close()
