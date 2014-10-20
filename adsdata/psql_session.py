@@ -11,7 +11,7 @@ from psql_models import Metrics
 Base = declarative_base()
 DATABASE_URI = 'postgresql+psycopg2://metrics:metrics@localhost:5432/metrics'
 
-def init():
+def init_session():
   engine = create_engine(DATABASE_URI)
  
   # Create all tables in the engine. This is equivalent to "Create Table"
@@ -22,7 +22,7 @@ def init():
   session = DBSession()
   return session
 
-def save(record):
+def save(record,session):
 
   #example data:
   # {'_id': '1920ApJ....51....4D',
@@ -43,8 +43,6 @@ def save(record):
   #                                                      u'2001': 0.070302403721891962}
   #                                }  
 
-  session = init()
-  
   #Manipulate the data a little bit
   record['bibcode'] = record['_id']
   del record['_id']
@@ -55,4 +53,3 @@ def save(record):
 
   session.add(Metrics(**record))
   session.commit()
-  session.close()
