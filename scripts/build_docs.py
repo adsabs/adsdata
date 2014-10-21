@@ -31,7 +31,7 @@ class Builder(Process):
         self.result_queue = result_queue
         self.publish_to_solr = publish_to_solr
         self.session = utils.get_session(config)
-        self.psql_session = psql_session.init_session()
+        self.psql_session = None
         
     def run(self):
         log = logging.getLogger()
@@ -52,7 +52,9 @@ class Builder(Process):
                     metrics = self.session.generate_metrics_data(bibcode)
                     metrics_updated = self.session.store(metrics, self.session.metrics_data)
                     try:
-                        psql_session.save(metrics,self.psql_session)
+                        if not self.psql_session:
+                            self.psql_session = psql_session.Session()
+                        self.psql_session.save_metrics_record(metrics)
                     except:
                         log.error("Error on %s: %s" % (bibcode,traceback.format_exc()))
                 # for the time being the metrics collection is not indexed in solr,
