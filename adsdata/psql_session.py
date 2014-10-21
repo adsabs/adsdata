@@ -5,8 +5,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
-from psql_models import Metrics
+from psql_models import Metrics, Base
 
 
 class Session:
@@ -16,8 +17,7 @@ class Session:
     self.DATABASE_URI = DATABASE_URI
     self.engine = create_engine(DATABASE_URI)
     
-    self.Base = declarative_base()
-    self.Base.metadata.create_all(self.engine)
+    Base.metadata.create_all(self.engine)
 
     self.connection = sessionmaker(bind=self.engine)()
 
@@ -49,15 +49,15 @@ class Session:
       del record['_digest']
     record['modtime'] = datetime.datetime.now()
 
-    current = self.connection.query(Metrics).filter(Metrics.bibcode==record['bibcode']).one()
-    if current:
+    try:
+      current = self.connection.query(Metrics).filter(Metrics.bibcode==record['bibcode']).one()
       excluded_fields = ['modtime']
-      if dict((k,v) for k,v in current[0].iteritems() if k not in excluded_fields)==dict((k,v) for k,v in record.iteritems() if k not in excluded_fields):
+      if dict((k,current.__getattribute__(k)) for k in record if k not in excluded_fields)==dict((k,v) for k,v in record.iteritems() if k not in excluded_fields):
         #Record is the same as the current one: no-op
         return
       for k,v in record.iteritems():
-        current[0].__setattr__(k,v)
-    else:
+        current.__setattr__(k,v)
+    except NoResultFound:
       self.connection.add(Metrics(**record))
     self.connection.commit()
 
