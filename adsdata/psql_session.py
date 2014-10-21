@@ -17,9 +17,9 @@ class Session:
     self.engine = create_engine(DATABASE_URI)
     
     self.Base = declarative_base()
-    self.Base.metadata.create_all(engine)
+    self.Base.metadata.create_all(self.engine)
 
-    self.connection = sessionmaker(bind=engine)()
+    self.connection = sessionmaker(bind=self.engine)()
 
   def save_metrics_record(self,record):
     #Very domain specific; strong assumption of the incoming data's schema
