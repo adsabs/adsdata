@@ -47,10 +47,18 @@ class Session:
     del record['_id']
     if '_digest' in record:
       del record['_digest']
-
     record['modtime'] = datetime.datetime.now()
 
-    self.connection.add(Metrics(**record))
+    current = self.connection.query(Metrics).filter(Metrics.bibcode==record['bibcode']).one()
+    if current:
+      excluded_fields = ['modtime']
+      if dict((k,v) for k,v in current[0].iteritems() if k not in excluded_fields)==dict((k,v) for k,v in record.iteritems() if k not in excluded_fields):
+        #Record is the same as the current one: no-op
+        return
+      for k,v in record.iteritems():
+        current[0].__setattr__(k,v)
+    else:
+      self.connection.add(Metrics(**record))
     self.connection.commit()
 
   def close(self):
