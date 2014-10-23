@@ -14,7 +14,7 @@ class Metrics(Base):
   __tablename__='metrics'
 
   id = Column(Integer,primary_key=True)
-  bibcode = Column(String,nullable=False,index=True)
+  bibcode = Column(String,nullable=False,index=True,unique=True)
   refereed = Column(Boolean)
   rn_citations = Column(postgresql.REAL)
   rn_citation_data = Column(postgresql.JSON)

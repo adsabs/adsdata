@@ -44,9 +44,12 @@ class Session:
     #                                }  
 
     record['bibcode'] = record['_id']
-    del record['_id']
-    if '_digest' in record:
-      del record['_digest']
+
+    deletions = ['_id','_digest','_dt']
+    for k in deletions:
+      if k in record:
+        del record[k]
+
     record['modtime'] = datetime.datetime.now()
 
     try:
