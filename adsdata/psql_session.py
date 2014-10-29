@@ -51,7 +51,6 @@ class Session:
         del record[k]
 
     record['modtime'] = datetime.datetime.now()
-
     try:
       current = self.connection.query(Metrics).filter(Metrics.bibcode==record['bibcode']).one()
       excluded_fields = ['modtime']
@@ -62,7 +61,10 @@ class Session:
         current.__setattr__(k,v)
     except NoResultFound:
       self.connection.add(Metrics(**record))
-    self.connection.commit()
+    try:
+      self.connection.commit()
+    except:
+      self.connection.rollback()
 
   def close(self):
     self.connection.close()
