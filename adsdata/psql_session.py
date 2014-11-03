@@ -13,15 +13,14 @@ from psql_models import Metrics, Base
 class Session:
 
   def __init__(self,DATABASE_URI='postgresql+psycopg2://metrics:metrics@localhost:5432/metrics'):
-
     self.DATABASE_URI = DATABASE_URI
     self.engine = create_engine(DATABASE_URI)
     
     Base.metadata.create_all(self.engine)
 
-    self.connection = sessionmaker(bind=self.engine)()
+    self.session = sessionmaker(bind=self.engine)()
 
-  def save_metrics_record(self,record):
+  def save_metrics_record(self,records):
     #Very domain specific; strong assumption of the incoming data's schema
 
     #example data:
@@ -42,29 +41,30 @@ class Session:
     #                                                      u'2000': 0.089170328250193845,
     #                                                      u'2001': 0.070302403721891962}
     #                                }  
+    for record in records:
+      record['bibcode'] = record['_id']
 
-    record['bibcode'] = record['_id']
+      deletions = ['_id','_digest','_dt']
+      for k in deletions:
+        if k in record:
+          del record[k]
 
-    deletions = ['_id','_digest','_dt']
-    for k in deletions:
-      if k in record:
-        del record[k]
-
-    record['modtime'] = datetime.datetime.now()
+      record['modtime'] = datetime.datetime.now()
+      try:
+        current = self.session.query(Metrics).filter(Metrics.bibcode==record['bibcode']).one()
+        excluded_fields = ['modtime']
+        if dict((k,current.__getattribute__(k)) for k in record if k not in excluded_fields)==dict((k,v) for k,v in record.iteritems() if k not in excluded_fields):
+          #Record is the same as the current one: no-op
+          return
+        for k,v in record.iteritems():
+          current.__setattr__(k,v)
+      except NoResultFound:
+        self.session.add(Metrics(**record))
+      
     try:
-      current = self.connection.query(Metrics).filter(Metrics.bibcode==record['bibcode']).one()
-      excluded_fields = ['modtime']
-      if dict((k,current.__getattribute__(k)) for k in record if k not in excluded_fields)==dict((k,v) for k,v in record.iteritems() if k not in excluded_fields):
-        #Record is the same as the current one: no-op
-        return
-      for k,v in record.iteritems():
-        current.__setattr__(k,v)
-    except NoResultFound:
-      self.connection.add(Metrics(**record))
-    try:
-      self.connection.commit()
+      self.session.commit()
     except:
-      self.connection.rollback()
+      self.session.rollback()
 
   def close(self):
-    self.connection.close()
+    self.session.close()
