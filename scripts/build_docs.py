@@ -13,8 +13,11 @@ import logging
 import itertools
 from optparse import OptionParser
 from multiprocessing import Process, JoinableQueue, cpu_count
+import traceback
 
 from adsdata import utils, models
+from adsdata import psql_session
+
 
 commands = utils.commandList()
 
@@ -26,9 +29,18 @@ class Builder(Process):
         self.do_metrics = do_metrics
         self.task_queue = task_queue
         self.result_queue = result_queue
-        self.publish_to_solr = publish_to_solr
         self.session = utils.get_session(config)
-        
+        self.psql = {
+            'session':psql_session.Session(),
+            'payload': [],
+            'payload_size': 500,
+        }
+        self.rabbit = {
+            'publish': publish_to_solr,
+            'payload': [],
+            'payload_size': 100,
+        }
+
     def run(self):
         log = logging.getLogger()
         while True:
@@ -47,14 +59,26 @@ class Builder(Process):
                 if self.do_metrics:
                     metrics = self.session.generate_metrics_data(bibcode)
                     metrics_updated = self.session.store(metrics, self.session.metrics_data)
+                    self.rabbit['payload'].append(bibcode)
+                    self.psql['payload'].append(bibcode)
+                    if len(self.psql['payload']) >= self.psql['payload_size']:
+                        try:
+                            self.psql['session'].save_metrics_record(self.psql['payload'])
+                        except:
+                            log.error('%s' % traceback.format_exc() )
+                        finally:
+                            self.psql['payload'] = []
+                            self.psql['session'].close()
                 # for the time being the metrics collection is not indexed in solr,
                 # so no need to publish when there is an update to it
                 # if self.publish_to_solr and (docs_updated or metrics_updated):
-                if self.publish_to_solr and docs_updated:
-                    try:
-                        publish_to_rabbitmq(bibcode)
-                    except Exception, e:
-                        log.error("Publish to rabbitmq failed: %s, %s" % (bibcode,e))
+                if docs_updated:
+                    if self.rabbit['publish'] and len(self.rabbit['payload']) >= self.rabbit['payload_size']:
+                        try:
+                            publish_to_rabbitmq(self.rabbit['payload'])
+                        except Exception, e:
+                            log.error("Publish to rabbitmq failed: %s, %s" % (e,payload))
+                    self.rabbit['payload'] = []
             except:
                 log.error("Something went wrong building %s", bibcode)
                 raise
@@ -63,12 +87,12 @@ class Builder(Process):
                 log.debug("task queue size: %d", self.task_queue.qsize())
         return
 
-def publish_to_rabbitmq(bibcode,exchange='MergerPipelineExchange',route='SolrUpdateRoute'):
+def publish_to_rabbitmq(payload,exchange='MergerPipelineExchange',route='SolrUpdateRoute'):
   import pika, json
   url='amqp://admin:password@localhost:5672/%2F'
   connection = pika.BlockingConnection(pika.URLParameters(url))
   channel = connection.channel()
-  channel.basic_publish(exchange,route,json.dumps([bibcode]))
+  channel.basic_publish(exchange,route,json.dumps(payload))
   connection.close()
 
 def get_bibcodes(opts):
