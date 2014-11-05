@@ -119,6 +119,7 @@ class DataSession(object):
         # NOTE: even for cases where there was no existing doc we need to do an 
         # upsert to avoid race conditions
         collection.update(spec, record, manipulate=True, upsert=True)
+        log.info("Updated %s" % record['_id'])
         return True
 
 class DatetimeInjector(SONManipulator):

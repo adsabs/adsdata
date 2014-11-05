@@ -47,20 +47,26 @@ class Builder(Process):
             bibcode = self.task_queue.get()
             if bibcode is None:
                 log.info("Nothing left to build for worker %s", self.name)
+                if self.psql['payload']:
+                  self.psql['session'].save_metrics_record(self.psql['payload'])
+                  self.psql['session'] = []
+                if self.rabbit['publish'] and self.rabbit['payload']:
+                  publish_to_rabbitmq(self.rabbit['payload'])
+                  self.rabbit['payload'] = []
                 self.task_queue.task_done()
                 break
-            log.info("Worker %s: working on %s", self.name, bibcode)
+            log.debug("Worker %s: working on %s", self.name, bibcode)
             try:
                 doc_updated = False
                 metrics_updated = False
                 if self.do_docs:
                     doc = self.session.generate_doc(bibcode)
                     docs_updated = self.session.store(doc, self.session.docs)
+                    self.rabbit['payload'].append(bibcode)
                 if self.do_metrics:
                     metrics = self.session.generate_metrics_data(bibcode)
                     metrics_updated = self.session.store(metrics, self.session.metrics_data)
-                    self.rabbit['payload'].append(bibcode)
-                    self.psql['payload'].append(bibcode)
+                    self.psql['payload'].append(metrics)
                     if len(self.psql['payload']) >= self.psql['payload_size']:
                         try:
                             self.psql['session'].save_metrics_record(self.psql['payload'])
@@ -129,7 +135,7 @@ def build_synchronous(opts):
             metrics = session.generate_metrics_data(bib)
             if metrics is not None:
                 session.store(metrics, session.metrics_data)
-        log.info("Done building %s", bib)
+        log.debug("Done building %s", bib)
     return
         
 @commands
