@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 SCRIPT=$(readlink -f $0)
 SCRIPTPATH=`dirname $SCRIPT`
@@ -19,7 +19,7 @@ echo "#############" `date` ": synching data sources #################"
 python $BASEPATH/scripts/sync_mongo_data.py "$@" sync
 
 echo "#############" `date` ": building docs collection ###################"
-python $BASEPATH/scripts/build_docs.py "$@" build
+python $BASEPATH/scripts/build_docs.py "$@" build -t 3
 
 echo "#############" `date` ": processing deletions ###################"
 python $BASEPATH/scripts/deletions.py "$@" delete

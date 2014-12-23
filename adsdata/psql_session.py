@@ -8,19 +8,24 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from psql_models import Metrics, Base
+from adsdata import utils
+
+config = utils.load_config()
 
 
 class Session:
 
-  def __init__(self,DATABASE_URI='postgresql+psycopg2://metrics:metrics@localhost:5432/metrics'):
+  def __init__(self,DATABASE_URI='postgresql+psycopg2://localhost:5432/metrics'):
     self.DATABASE_URI = DATABASE_URI
-    self.engine = create_engine(DATABASE_URI)
+    if 'PSQL_DATABASE_URI' in config:
+      self.DATABASE_URI = config['PSQL_DATABASE_URI']
+    self.engine = create_engine(self.DATABASE_URI)
     
     Base.metadata.create_all(self.engine)
 
     self.session = sessionmaker(bind=self.engine)()
 
-  def save_metrics_record(self,records):
+  def save_metrics_records(self,records):
     #Very domain specific; strong assumption of the incoming data's schema
 
     #example data:

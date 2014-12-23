@@ -42,7 +42,9 @@ def get_models(opts, config):
             continue
         collection_name = model_class.config_collection_name
         if collection_name not in config['collections']:
-            raise RuntimeError("No source file configured for %s" % collection_name)
+            log.warning("No entry configured for collection %s, skipping it..." % collection_name)
+            continue
+            #raise RuntimeError("No source file configured for %s" % collection_name)
         yield model_class, config['collections'][collection_name]
         
 @commands

@@ -53,13 +53,13 @@ class PdfExtractor(Callable):
                 task_data = json.loads(str(task))
                 log.debug("got task: %s", str(task_data))
                 resp = self.extract(task_data['bibcode'], task_data['ft_source'])
-                self.channel.basicPublish("", props.getReplyTo(), reply_props, resp)
             except Exception, e:
-                msg = format_exc()
+                msg = traceback.format_exc()
                 log.debug("returning error response: %s" % str(msg))
-                error_props = BasicProperties.Builder().type("exception").build()
-                pub = self.channel.basicPublish("", props.getReplyTo(), error_props, msg)
+                resp = { '_exception': str(msg) }
             finally:
+                log.debug("publishing extraction results")
+                self.channel.basicPublish("", props.getReplyTo(), reply_props, json.dumps(resp))
                 log.debug("acknowledging task processed")
                 self.channel.basicAck(delivery.getEnvelope().getDeliveryTag(), False)
             
@@ -77,6 +77,7 @@ class PdfExtractor(Callable):
             parser = PDFParser(fis)
         except java.io.IOException, e:
             log.error("Unable to create PDFParser for %s from %s: %s", bibcode, ft_source, e.getMessage())
+            #return { '_exception': traceback.format_exc() }
             raise
 
         pdDoc = None
@@ -88,6 +89,7 @@ class PdfExtractor(Callable):
             parsedText = pdfStripper.getText(pdDoc)
         except: # Exception, e:
             log.error("Exception occurred while parsing %s: %s", ft_source, str(sys.exc_info()))
+            #return { '_exception': traceback.format_exc() }
             raise
         finally:
             pdDoc.close()
@@ -98,10 +100,12 @@ class PdfExtractor(Callable):
             parsedText = normalizer.normalizePres(parsedText)
             parsedText = parsedText.replace("\n", "")
         except: # Exception, e:
-            log.error("Exception occurred during normalization of %s: %s", ft_source, str(sys.exc_info()))
+            sys.stderr.write("exception traceback: %s" % traceback.format_exc())
+            log.error("Exception occurred during normalization of %s: %s", ft_source, traceback.format_exc())
+            #return { '_exception': traceback.format_exc() }
             raise
 
-        return parsedText
+        return { 'fulltext': parsedText }
 
 def main(opts):
         
@@ -125,10 +129,10 @@ def main(opts):
     tpool.shutdown()
 
     try:
-        if not tpool.awaitTermination(5, TimeUnit.SECONDS):
+        if not tpool.awaitTermination(50, TimeUnit.SECONDS):
             log.info("thread pool not shutting down; trying again")
             tpool.shutdownNow()
-            if not tpool.awaitTermination(5, TimeUnit.SECONDS):
+            if not tpool.awaitTermination(50, TimeUnit.SECONDS):
                 log.error("Pool did not terminate")
     except InterruptedException:
         log.info("exception during thread pool shutdown; trying again")
@@ -138,7 +142,7 @@ def main(opts):
 if __name__ == '__main__':
     
     op = OptionParser()
-    op.set_usage("usage: pdf_jenerate.py [options] ")
+    op.set_usage("usage: extract_pdf.py [options] ")
     op.add_option('-v','--verbose', dest='verbose', action='store_true',
         help='write log output to stdout', default=False)
     op.add_option('-d','--debug', dest='debug', action='store_true',

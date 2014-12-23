@@ -6,4 +6,4 @@ BASEPATH=`dirname $SCRIPTPATH`
 
 echo $SCRIPTPATH
 
-$SCRIPTPATH/jython/bin/jython -J-cp "$SCRIPTPATH/lib/*" extract_pdf.py -w 6 "$@"
+$SCRIPTPATH/jython/bin/jython -J-cp "$SCRIPTPATH/lib/*" $SCRIPTPATH/extract_pdf.py -w 6 "$@"

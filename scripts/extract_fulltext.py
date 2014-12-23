@@ -63,31 +63,16 @@ class ExtractWorker(Process):
                 self.stats['processed'] += 1
                 self.queue.task_done()
 
+
 def get_ft_items(opts):
-    
-    session = utils.get_session(config)
-    ft_iter = None
-    
-    if opts.infile:
-        if opts.infile == '-':
-            stream = sys.stdin
-        else:
-            stream = open(opts.infile, 'r')
-        bibcodes = itertools.ifilter(lambda(x): re.match('^\d{4}', x) and True or False, stream)
-        bibcodes = itertools.imap(lambda x: x.strip(), bibcodes)
-        def fetch_ft_link(bib):
-            return utils.get_document(session, models.FulltextLink, bibcode=bib)
-        ft_iter = itertools.imap(fetch_ft_link, bibcodes)
+    """reads the file with a table listing bibcodes, source files, and name of provider"""
+    if opts.infile == '-':
+        stream = sys.stdin
     else:
-        ft_iter = session.iterate(models.FulltextLink)
-        
-    if opts.limit:
-        ft_iter = itertools.islice(ft_iter, opts.limit)
-    
-    for ft_link in ft_iter:
-        if ft_link is None:
-            continue
-        yield (ft_link.bibcode, ft_link.fulltext_source, ft_link.provider)
+        stream = open(opts.infile, 'r')
+    # read all at once to avoid problems with NSF files being clobbered
+    items = [ l.strip().split('\t') for l in stream.read().strip().split('\n') ]
+    return items
 
 @commands
 def extract(opts):
@@ -99,6 +84,10 @@ def extract(opts):
     stats['processed'] = 0
     stats['exceptions'] = 0
     
+    log.info("Reading input list of bibcodes to be processed")
+    items = get_ft_items(opts)
+    log.info("Read %d records from %s" %(len(items), opts.infile))
+
     # start up our builder threads
     log.info("Creating %d extractor processes" % opts.threads)
     
@@ -108,7 +97,7 @@ def extract(opts):
         w.start()
         
     # queue up the bibcodes
-    for item in get_ft_items(opts):
+    for item in items:
         tasks.put(item)
     
     # add some poison pills to the end of the queue
@@ -170,9 +159,12 @@ if __name__ == '__main__':
     pika_log.setLevel(logging.WARNING)
     
     if opts.force_older_than:
-        log.info("Forcing generationo of records older than %s" % opts.force_older_than)
+        log.info("Forcing generation of records older than %s" % opts.force_older_than)
         opts.force_older_than = datetime(*(time.strptime(opts.force_older_than, '%Y-%m-%d %H:%M:%S %Z')[:5]))
-        
+
+    if not opts.infile:
+        op.error("no input file given")
+
     try:
         cmd = args.pop()
         assert cmd in commands.map

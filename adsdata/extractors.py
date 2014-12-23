@@ -65,7 +65,9 @@ class Extractor():
 
         if ft_source.lower().endswith('pdf'):
             log.debug("%s is a pdf fulltext record", bibcode)
-            return PdfExtractor(bibcode, ft_source, provider)
+            #return PdfExtractor(bibcode, ft_source, provider)
+            # we'll need to use PDFBox-based extraction via queues eventually
+            raise PdfExtractException("PDF extraction currently disabled for %s, %s, %s", bibcode, ft_source, provider)
 
         if ft_source.lower().endswith('xml'):
             log.debug("%s is a xml fulltext record", bibcode)
@@ -94,8 +96,8 @@ class Extractor():
         if not self.dry_run:
             try:
                 os.makedirs(self.extract_dir)
-                self.write_meta(meta)
-            except IOError, e:
+                #self.write_meta(meta)
+            except OSError, e:
                 if e.errno == errno.EEXIST and os.path.isdir(self.extract_dir):
                     # another process beat us. no big deal.
                     pass
@@ -301,35 +303,43 @@ class PdfExtractor(FileBasedExtractor):
     def load_source(self):
         import pika 
         
+        if 'RABBITMQ_PDF_QUEUE' in os.environ:
+            pdf_queue_name = os.environ['RABBITMQ_PDF_QUEUE']
+        else:
+            pdf_queue_name = config['RABBITMQ_PDF_QUEUE']
+        if 'RABBITMQ_EXCHANGE' in config:
+            exchange = config['RABBITMQ_EXCHANGE']
+        else:
+            exchange = ''
+            
         self.channel = utils.rabbitmq_channel()
         res = self.channel.queue_declare(auto_delete=True)
         callback_queue = res.method.queue
         log.debug("created callback_queue: %s" % callback_queue)
         self._consumer_tag = self.channel.basic_consume(self._on_response, no_ack=True, queue=callback_queue)
         
-        if 'RABBITMQ_PDF_QUEUE' in os.environ:
-            pdf_queue_name = os.environ['RABBITMQ_PDF_QUEUE']
-        else:
-            pdf_queue_name = config['RABBITMQ_PDF_QUEUE']
-            
         log.debug("queueing %s for pdf extraction on %s", self.bibcode, pdf_queue_name)
         
         msg = json.dumps({ 'bibcode': self.bibcode, 'ft_source': self.ft_source })
         properties = pika.BasicProperties(reply_to=callback_queue)
-        self.channel.basic_publish(exchange='',
-                              routing_key=pdf_queue_name,
-                              properties=properties,
-                              body=msg)
+        self.channel.basic_publish(exchange=exchange,
+                                   routing_key=pdf_queue_name,
+                                   properties=properties,
+                                   body=msg)
         log.debug("waiting for responses...")
         while self.source_content is None:
             self.channel.connection.process_data_events()
         
     def get_contents(self):
-
         if not self.source_loaded:
             self.load_source()
-        return { 'fulltext' : utils.text_cleanup(self.source_content, translate=True, decode=True) }    
+        content = json.loads(self.source_content)
+        if content.get('_exception'):
+            e = content.pop('_exception')
+            log.info("got exception for %s: %s", self.bibcode, e)
+        return { 'fulltext' : utils.text_cleanup(content.get('fulltext',''), translate=True, decode=True) }    
     
+
 class XMLExtractor(FileBasedExtractor):
 
     def __init__(self, *args):

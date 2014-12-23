@@ -33,7 +33,7 @@ class Builder(Process):
         self.psql = {
             'session':psql_session.Session(),
             'payload': [],
-            'payload_size': 500,
+            'payload_size': 100,
         }
         self.rabbit = {
             'publish': publish_to_solr,
@@ -48,7 +48,7 @@ class Builder(Process):
             if bibcode is None:
                 log.info("Nothing left to build for worker %s", self.name)
                 if self.psql['payload']:
-                  self.psql['session'].save_metrics_record(self.psql['payload'])
+                  self.psql['session'].save_metrics_records(self.psql['payload'])
                   self.psql['session'] = []
                 if self.rabbit['publish'] and self.rabbit['payload']:
                   publish_to_rabbitmq(self.rabbit['payload'])
@@ -62,28 +62,27 @@ class Builder(Process):
                 if self.do_docs:
                     doc = self.session.generate_doc(bibcode)
                     docs_updated = self.session.store(doc, self.session.docs)
-                    self.rabbit['payload'].append(bibcode)
+                    if docs_updated:
+                      self.rabbit['payload'].append(bibcode)
+
                 if self.do_metrics:
                     metrics = self.session.generate_metrics_data(bibcode)
                     metrics_updated = self.session.store(metrics, self.session.metrics_data)
-                    self.psql['payload'].append(metrics)
-                    if len(self.psql['payload']) >= self.psql['payload_size']:
-                        try:
-                            self.psql['session'].save_metrics_record(self.psql['payload'])
-                        except:
-                            log.error('%s' % traceback.format_exc() )
-                        finally:
-                            self.psql['payload'] = []
-                            self.psql['session'].close()
-                # for the time being the metrics collection is not indexed in solr,
-                # so no need to publish when there is an update to it
-                # if self.publish_to_solr and (docs_updated or metrics_updated):
-                if docs_updated:
-                    if self.rabbit['publish'] and len(self.rabbit['payload']) >= self.rabbit['payload_size']:
-                        try:
-                            publish_to_rabbitmq(self.rabbit['payload'])
-                        except Exception, e:
-                            log.error("Publish to rabbitmq failed: %s, %s" % (e,payload))
+                    if metrics_updated:
+                      self.psql['payload'].append(metrics)
+             
+                if len(self.psql['payload']) >= self.psql['payload_size']:
+                    try:
+                        self.psql['session'].save_metrics_records(self.psql['payload'])
+                    except:
+                        log.error('%s' % traceback.format_exc() )
+                    self.psql['payload'] = []
+
+                if self.rabbit['publish'] and len(self.rabbit['payload']) >= self.rabbit['payload_size']:
+                    try:
+                        publish_to_rabbitmq(self.rabbit['payload'])
+                    except Exception, e:
+                        log.error("Publish to rabbitmq failed: %s, %s" % (e,payload))
                     self.rabbit['payload'] = []
             except:
                 log.error("Something went wrong building %s", bibcode)
