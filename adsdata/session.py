@@ -82,8 +82,12 @@ class DataSession(object):
         return doc
 
     def get_metrics_data(self, bibcode, manipulate=True):
-        spec = {'_id': bibcode}
-        return self.metrics_data.find_one(spec, manipulate=manipulate)
+        if isinstance(bibcode, list):
+            spec = {'_id': {"$in": bibcode}}
+            return list(self.metrics_data.find(spec, manipulate=manipulate))
+        else:
+            spec = {'_id': bibcode}
+            return self.metrics_data.find_one(spec, manipulate=manipulate)
 
     def metrics_data_sources(self):
         if not hasattr(self, 'metrics_data_source_models'):
