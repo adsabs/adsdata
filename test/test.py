@@ -81,7 +81,7 @@ class AdsdataTestCase(unittest.TestCase):
         self.boxclient['admin'].authenticate('foo','bar')
         self.boxclient['test'].add_user('test','test')
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        config = utils.load_config(os.path.join(base_dir, 'adsdata.cfg'))
+        config = utils.load_config(os.path.join(base_dir, 'test/adsdata.cfg.test'))
         config['ADSDATA_MONGO_DATABASE'] = 'test'
         config['ADSDATA_MONGO_HOST'] = 'localhost'
         config['ADSDATA_MONGO_PORT'] = self.box.port
@@ -292,7 +292,8 @@ class TestDocs(AdsdataTestCase):
                                'full': u'Lorem ipsum dolor sit amet, consecteteur adipiscing. Amet faucibus purus. Iaculis sollicitudin ornare id justo mi vitae taciti sociis nonummy. Ornare cursus magna per. Neque rhoncus sapien dictum nec, feugiat. Ut pulvinar quis. Potenti odio, consectetuer nascetur velit malesuada leo, sollicitudin luctus morbi ultricies. Proin pellentesque molestie lorem urna eni taciti a, quisque mollis. Tempus metus ullamcorper odio duis, elit curabitur torquent eu. Ridiculus. A. Suspendisse eu, cursus sociosqu. Lectus nec, euismod ve, nec. Montes, proin leo vitae pede metus, scelerisque eni, varius commodo.',
                                'readers': [ u"436f75a55a", u"46272c410e", u"490ab747dc", u"4939448062", u"4b5a08bbfe", u"4c6ba8aa3a", u"4c8b74d412", u"4e4e04ba43", u"4f062ccce1", u"501a251579", u"5027566670", u"50a4fe3774", u"50c080fcbf", u"50c3afbc0d", u"50f0d5b2b4", u"51008459eb", u"X058634054", u"X0655ebd3f", u"X0ae824e1a", u"X1b0df8aff", u"X1eef54acb", u"X21917fa62", u"X24bfec4a0", u"X25d68b840", u"X2a33f071f", u"X781029d71", u"X7da609b3b", u"X83d0b59d7", u"Xd118f4129", u"Xd727d89bb", u"Xe8ee1dc61", u"Xe8fe06b10" ],
                                'simbad_object_ids': [1514745, 1514748, 1514750, 1514751, 1514755, 1515364, 1519004, 1519087, 1519992, 1519997, 1520006, 1520008, 1520023, 1520024, 1520029, 1520032, 1520033, 1520034, 1520038, 1520139, 1520357, 1520371, 1520374, 1520381, 1520391, 1520395, 1520402, 1520404, 1520406, 1520413, 1520419, 1521360, 1521374, 1522778, 1575544, 3133169, 3754378, 5228155, 5228162, 5228174],
-                               'refereed': True})
+                               'refereed': True
+                               })
         
     def test_build_docs(self):
         load_data(self.config)

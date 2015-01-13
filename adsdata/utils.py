@@ -62,7 +62,7 @@ def load_config(config_file=None):
     if config is None:
         if config_file is None:
             config_file = os.path.join(base_dir(), 'adsdata.cfg')
-            
+        print config_file    
         config = ConfigParser.ConfigParser()
         config.optionxform = str # otherwise the config parser lowercases setting names
         config.read(config_file)
