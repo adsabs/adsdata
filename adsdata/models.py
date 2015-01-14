@@ -24,7 +24,6 @@ log = logging.getLogger()
     
 def _get_models(cls):
 
-    print cls
     for name, obj in inspect.getmembers(sys.modules[__name__]):
         if inspect.isclass(obj) and cls in obj.__bases__:
             yield obj
@@ -247,7 +246,7 @@ class DataFileCollection(DataCollection):
                     record[k] = [constructor(x) for x in v]
                 else:
                     record[k] = constructor(v)
-        
+
     @classmethod
     def post_load_data(cls, session, source_collection, *args, **kwargs):
         """
@@ -477,7 +476,7 @@ class SimbadObjects(DataFileCollection, DocsDataCollection):
     config_collection_name = "simbad_objects"
     field_order = [bibcode, id, type]
     docs_fields = [simbad_objects]
-    
+
     @classmethod
     def post_load_data(cls, session, source_collection):
         target_collection_name = cls.config_collection_name
