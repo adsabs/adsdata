@@ -25,7 +25,6 @@ from os.path import basename
 from adsdata import utils
 from entitydefs import convertentities
 
-config = utils.load_config()
 log = logging.getLogger()
 
 class UnknownSourceTypeException(Exception):
@@ -42,11 +41,16 @@ class PdfExtractException(Exception):
 
 class Extractor():
     
-    def __init__(self, bibcode, ft_source, provider):
+    def __init__(self, bibcode, ft_source, provider, config=False):
         
+        if not config:
+            self.config = utils.load_config()
+        else:
+            self.config = config
+
         self.bibcode = bibcode
         self.ft_source = ft_source
-        self.provider = provider
+        self.provider = provider      
         self.extract_dir = config['FULLTEXT_EXTRACT_PATH'] + ptree.id2ptree(bibcode)
         self.meta_path = os.path.join(self.extract_dir, 'meta.json')
         self.source_loaded = False
@@ -57,33 +61,33 @@ class Extractor():
         log.debug("%s last extracted: %s", self.bibcode, self.last_extracted)
 
     @classmethod
-    def factory(cls, bibcode, ft_source, provider):
+    def factory(cls, bibcode, ft_source, provider, config=False):
 
         if ft_source.lower().startswith('http'):
             log.debug("%s is a http fulltext record", bibcode)
-            return HttpExtractor(bibcode, ft_source, provider)
+            return HttpExtractor(bibcode, ft_source, provider, config)
 
         if ft_source.lower().endswith('pdf'):
             log.debug("%s is a pdf fulltext record", bibcode)
-            #return PdfExtractor(bibcode, ft_source, provider)
+            return PdfExtractor(bibcode, ft_source, provider, config)
             # we'll need to use PDFBox-based extraction via queues eventually
-            raise PdfExtractException("PDF extraction currently disabled for %s, %s, %s", bibcode, ft_source, provider)
+            # raise PdfExtractException("PDF extraction currently disabled for %s, %s, %s", bibcode, ft_source, provider)
 
         if ft_source.lower().endswith('xml'):
             log.debug("%s is a xml fulltext record", bibcode)
             
             if provider == 'Elsevier':
-                return ElsevierExtractor(bibcode, ft_source, provider)
+                return ElsevierExtractor(bibcode, ft_source, provider, config)
             else:
-                return XMLExtractor(bibcode, ft_source, provider)
+                return XMLExtractor(bibcode, ft_source, provider, config)
 
         if ft_source.lower().endswith('html'):
             log.debug("%s is a html fulltext record" % bibcode)
-            return HtmlExtractor(bibcode, ft_source, provider)
+            return HtmlExtractor(bibcode, ft_source, provider, config)
 
         if ft_source.lower().endswith('txt') or ft_source.lower().endswith('ocr'):
             log.debug("%s is an ocr or plain text fulltext record" % bibcode)
-            return PlainTextExtractor(bibcode, ft_source, provider)
+            return PlainTextExtractor(bibcode, ft_source, provider, config)
 
         raise UnknownSourceTypeException(
             "don't know what generator class to use for %s, %s, %s", bibcode, ft_source, provider)
@@ -183,19 +187,18 @@ class Extractor():
         os.rename(tempname, path)
         
     def extract(self, clobber=False):
-        
         if not os.path.exists(self.meta_path):
             log.debug("initializing meta path for %s", self.bibcode)
             meta = self.init_path()
         else:
             meta = self.get_meta()
-            
+
         log.debug("extracting contents of %s from %s", self.bibcode, self.ft_source)
         contents = self.get_contents()
         if contents is None or not len(contents):
             log.debug("Nothing extracted")
             return
-        
+
         record_updated = False
         try:
             for field, text in contents.items():
@@ -311,24 +314,26 @@ class PdfExtractor(FileBasedExtractor):
             exchange = config['RABBITMQ_EXCHANGE']
         else:
             exchange = ''
-            
+
         self.channel = utils.rabbitmq_channel()
         res = self.channel.queue_declare(auto_delete=True)
+        
         callback_queue = res.method.queue
         log.debug("created callback_queue: %s" % callback_queue)
         self._consumer_tag = self.channel.basic_consume(self._on_response, no_ack=True, queue=callback_queue)
-        
         log.debug("queueing %s for pdf extraction on %s", self.bibcode, pdf_queue_name)
-        
         msg = json.dumps({ 'bibcode': self.bibcode, 'ft_source': self.ft_source })
         properties = pika.BasicProperties(reply_to=callback_queue)
         self.channel.basic_publish(exchange=exchange,
                                    routing_key=pdf_queue_name,
                                    properties=properties,
                                    body=msg)
+
         log.debug("waiting for responses...")
         while self.source_content is None:
             self.channel.connection.process_data_events()
+            
+        
         
     def get_contents(self):
         if not self.source_loaded:

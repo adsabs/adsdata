@@ -12,3 +12,4 @@ BeautifulSoup
 alembic
 psycopg2 #requires libpq-dev
 SqlAlchemy
+pycallgraph

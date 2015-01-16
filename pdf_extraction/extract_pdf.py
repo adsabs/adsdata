@@ -105,7 +105,10 @@ class PdfExtractor(Callable):
             #return { '_exception': traceback.format_exc() }
             raise
 
-        return { 'fulltext': parsedText }
+        ret = { 'fulltext': parsedText }
+        # log.info("Publishing result: %s", ret)
+
+        return ret
 
 def main(opts):
         

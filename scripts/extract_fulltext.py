@@ -20,6 +20,8 @@ config = utils.load_config()
 commands = utils.commandList()
 log = logging.getLogger()
 
+config['FULLTEXT_EXTRACT_PATH'] = os.path.join(utils.base_dir(), "test/data/")
+
 class ExtractWorker(Process):
     
     def __init__(self, queue, opts, thread_lock, stats, updates):
@@ -31,16 +33,15 @@ class ExtractWorker(Process):
         self.thread_lock = thread_lock
         
     def run(self):
-        
         while True:
             ft_item = self.queue.get()
             if ft_item is None:
                 self.queue.task_done()
                 break
             ext = None
+
             try:
                 ext = Extractor.factory(*ft_item)
-                
                 if self.opts.dry_run:
                     ext.dry_run = True
                     
@@ -72,6 +73,7 @@ def get_ft_items(opts):
         stream = open(opts.infile, 'r')
     # read all at once to avoid problems with NSF files being clobbered
     items = [ l.strip().split('\t') for l in stream.read().strip().split('\n') ]
+
     return items
 
 @commands
@@ -108,7 +110,6 @@ def extract(opts):
     # join the results queue. this should
     # block until all tasks in the task queue are completed
     log.info("Joining the task queue")
-    tasks.join()
     
     log.info("Joining the task threads")
     for w in workers:

@@ -52,16 +52,22 @@ def init_logging(base_dir, calling_script, logfile=None, verbose=False, debug=Fa
 def base_dir():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-config = None
+
 def load_config(config_file=None):
     """
     NOTE: since this returns a dict of config values, it's conceivable that code
     could change these config values. DO NOT DO THIS!
+
     """
-    global config
+    config = None
+    # global config
     if config is None:
+        print config_file
+        if config_file is None: print "NOOO NONE!"
         if config_file is None:
-            config_file = os.path.join(base_dir(), 'test/adsdata.cfg.test')
+            print "NOOOO"
+            config_file = os.path.join(base_dir(), 'adsdata.cfg')
+
         config = ConfigParser.ConfigParser()
         config.optionxform = str # otherwise the config parser lowercases setting names
         config.read(config_file)
