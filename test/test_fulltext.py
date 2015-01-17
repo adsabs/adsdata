@@ -8,24 +8,15 @@ if sys.version_info < (2,7):
 else:
     import unittest
     
-from adsdata import extractors
-
-from adsdata import utils
-
-config_file = os.path.join(utils.base_dir(), 'test/adsdata.cfg.test')
+from adsdata import extractors, utils
+base_dir = utils.get_script_path(file_name_space=__file__)
+config_file = os.path.join(base_dir, 'adsdata.cfg.test')
 config = utils.load_config(config_file)
-# config = {}
-# config["FULLTEXT_EXTRACT_PATH"] = 'test/data/'
-#print "Config file:", config_file
-
-#config = utils.load_config(config_file=config_file)
-
 
 
 class FulltextTestCase(unittest.TestCase):
     
     def test_extractor_factory(self):
-        print config.keys()
         test_input = [
             ('2000xxx..999..1234L', 'http://foo/bar/baz', 'Foo', extractors.HttpExtractor),
             ('2000xxx..999..1234L', '/foo/bar/baz.pdf', 'Foo', extractors.PdfExtractor),

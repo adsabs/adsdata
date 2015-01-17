@@ -20,8 +20,6 @@ config = utils.load_config()
 commands = utils.commandList()
 log = logging.getLogger()
 
-config['FULLTEXT_EXTRACT_PATH'] = os.path.join(utils.base_dir(), "test/data/")
-
 class ExtractWorker(Process):
     
     def __init__(self, queue, opts, thread_lock, stats, updates):

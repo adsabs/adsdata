@@ -62,10 +62,7 @@ def load_config(config_file=None):
     config = None
     # global config
     if config is None:
-        print config_file
-        if config_file is None: print "NOOO NONE!"
         if config_file is None:
-            print "NOOOO"
             config_file = os.path.join(base_dir(), 'adsdata.cfg')
 
         config = ConfigParser.ConfigParser()
@@ -244,4 +241,9 @@ def publish_updates(updates):
     channel.queue_declare(queue="fulltext_updates")
     msg = json.dumps({ 'updates': updates })
     channel.basic_publish(exchange="", routing_key="fulltext_updates", body=msg)
-    
+
+def get_script_path(file_name_space):
+    """
+    Obtain the base directory of the script that is being run
+    """
+    return os.path.dirname(os.path.realpath(file_name_space))
