@@ -81,7 +81,7 @@ class AdsdataTestCase(unittest.TestCase):
         self.boxclient['admin'].authenticate('foo','bar')
         self.boxclient['test'].add_user('test','test')
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        config = utils.load_config(os.path.join(base_dir, 'adsdata.cfg'))
+        config = utils.load_config(os.path.join(base_dir, 'test/adsdata.cfg.test'))
         config['ADSDATA_MONGO_DATABASE'] = 'test'
         config['ADSDATA_MONGO_HOST'] = 'localhost'
         config['ADSDATA_MONGO_PORT'] = self.box.port
@@ -291,8 +291,9 @@ class TestDocs(AdsdataTestCase):
                                '_id': '2012AJ....144...41M',
                                'full': u'Lorem ipsum dolor sit amet, consecteteur adipiscing. Amet faucibus purus. Iaculis sollicitudin ornare id justo mi vitae taciti sociis nonummy. Ornare cursus magna per. Neque rhoncus sapien dictum nec, feugiat. Ut pulvinar quis. Potenti odio, consectetuer nascetur velit malesuada leo, sollicitudin luctus morbi ultricies. Proin pellentesque molestie lorem urna eni taciti a, quisque mollis. Tempus metus ullamcorper odio duis, elit curabitur torquent eu. Ridiculus. A. Suspendisse eu, cursus sociosqu. Lectus nec, euismod ve, nec. Montes, proin leo vitae pede metus, scelerisque eni, varius commodo.',
                                'readers': [ u"436f75a55a", u"46272c410e", u"490ab747dc", u"4939448062", u"4b5a08bbfe", u"4c6ba8aa3a", u"4c8b74d412", u"4e4e04ba43", u"4f062ccce1", u"501a251579", u"5027566670", u"50a4fe3774", u"50c080fcbf", u"50c3afbc0d", u"50f0d5b2b4", u"51008459eb", u"X058634054", u"X0655ebd3f", u"X0ae824e1a", u"X1b0df8aff", u"X1eef54acb", u"X21917fa62", u"X24bfec4a0", u"X25d68b840", u"X2a33f071f", u"X781029d71", u"X7da609b3b", u"X83d0b59d7", u"Xd118f4129", u"Xd727d89bb", u"Xe8ee1dc61", u"Xe8fe06b10" ],
-                               'simbad_object_ids': [1514745, 1514748, 1514750, 1514751, 1514755, 1515364, 1519004, 1519087, 1519992, 1519997, 1520006, 1520008, 1520023, 1520024, 1520029, 1520032, 1520033, 1520034, 1520038, 1520139, 1520357, 1520371, 1520374, 1520381, 1520391, 1520395, 1520402, 1520404, 1520406, 1520413, 1520419, 1521360, 1521374, 1522778, 1575544, 3133169, 3754378, 5228155, 5228162, 5228174],
-                               'refereed': True})
+                               'simbad_objects': [1514745, 1514748, 1514750, 1514751, 1514755, 1515364, 1519004, 1519087, 1519992, 1519997, 1520006, 1520008, 1520023, 1520024, 1520029, 1520032, 1520033, 1520034, 1520038, 1520139, 1520357, 1520371, 1520374, 1520381, 1520391, 1520395, 1520402, 1520404, 1520406, 1520413, 1520419, 1521360, 1521374, 1522778, 1575544, 3133169, 3754378, 5228155, 5228162, 5228174],
+                               'refereed': True
+                               })
         
     def test_build_docs(self):
         load_data(self.config)
@@ -399,22 +400,27 @@ class TestMetrics(AdsdataTestCase):
         load_data(self.config)
         self.maxDiff = None
         doc = self.session.generate_metrics_data("1920ApJ....51....4D")
+
+        # Hard coding the age normalised citation count will ensure the tests fail after 1 year
+        age = (datetime.now()).year - 1920 + 1
+
         self.assertEqual(doc, {'_id': '1920ApJ....51....4D',
                                'refereed': True,
-                               'rn_citations': 0.070302403721891962,
-                               'rn_citation_data': [{'bibcode':u'1983ARA&A..21..373O','ref_norm':0.018867924528301886}, {'bibcode':u'2000JOptB...2..534W', 'ref_norm': 0.018867924528301886}, {'bibcode':u'2000PhRvL..84.2094A', 'ref_norm': 0.013698630136986301}, {'bibcode':u'2001AJ....122..308G','ref_norm': 0.018867924528301886}],
+                               'rn_citations': 0.270302403721891962,
+                               'rn_citation_data': [{'bibcode':u'1983ARA&A..21..373O','ref_norm':0.018867924528301886}, {'bibcode':u'2000JOptB...2..534W', 'ref_norm': 0.018867924528301886}, {'bibcode':u'2000PhRvL..84.2094A', 'ref_norm': 0.013698630136986301}, {'bibcode':u'2001AJ....122..308G','ref_norm': 0.018867924528301886}, {'bibcode': u'2011foobar........X', 'ref_norm': 0.2}],
                                'downloads': [0, 0, 0, 5, 3, 3, 2, 6, 1, 8, 7, 2, 7, 3, 2, 0, 4, 5],
                                'reads': [0, 0, 0, 5, 4, 3, 3, 6, 1, 8, 12, 4, 7, 3, 2, 2, 8, 0],
-                               'an_citations': 0.052631578947368418,
+                               'an_citations': 5.0/age, #0.052631578947368418,
                                'refereed_citation_num': 4,
                                'citation_num': 5,
                                'citations': [u'1983ARA&A..21..373O', u'2000JOptB...2..534W', u'2000PhRvL..84.2094A', u'2001AJ....122..308G', u'2011foobar........X'],
                                'refereed_citations': [u'1983ARA&A..21..373O', u'2000JOptB...2..534W', u'2000PhRvL..84.2094A', u'2001AJ....122..308G'],
                                'author_num': 1,
-                               'an_refereed_citations': 0.042105263157894736,
+                               'an_refereed_citations': 4.0/age, #0.042105263157894736,
                                'rn_citations_hist': {u'1983': 0.018867924528301886,
                                                      u'2000': 0.089170328250193845,
-                                                     u'2001': 0.070302403721891962}
+                                                     u'2001': 0.070302403721891962,
+                                                     u'2011': 0.27030240372189196}
                                })
     def test_build_metrics_data(self):
         load_data(self.config)

@@ -15,4 +15,4 @@ grants: test/demo_collections/grants.tsv
 readers: test/demo_collections/readers.tsv
 reads: test/demo_collections/reads.tsv
 refereed: test/demo_collections/refereed.tsv
-simbad_object_ids: test/demo_collections/simbad_object_ids.tsv
+simbad_object: test/demo_collections/simbad_object.tsv
