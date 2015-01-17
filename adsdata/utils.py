@@ -52,16 +52,19 @@ def init_logging(base_dir, calling_script, logfile=None, verbose=False, debug=Fa
 def base_dir():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-config = None
+
 def load_config(config_file=None):
     """
     NOTE: since this returns a dict of config values, it's conceivable that code
     could change these config values. DO NOT DO THIS!
+
     """
-    global config
+    config = None
+    # global config
     if config is None:
         if config_file is None:
-            config_file = os.path.join(base_dir(), 'test/adsdata.cfg.test')
+            config_file = os.path.join(base_dir(), 'adsdata.cfg')
+
         config = ConfigParser.ConfigParser()
         config.optionxform = str # otherwise the config parser lowercases setting names
         config.read(config_file)
@@ -238,4 +241,9 @@ def publish_updates(updates):
     channel.queue_declare(queue="fulltext_updates")
     msg = json.dumps({ 'updates': updates })
     channel.basic_publish(exchange="", routing_key="fulltext_updates", body=msg)
-    
+
+def get_script_path(file_name_space):
+    """
+    Obtain the base directory of the script that is being run
+    """
+    return os.path.dirname(os.path.realpath(file_name_space))

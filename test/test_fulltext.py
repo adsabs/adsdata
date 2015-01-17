@@ -8,8 +8,12 @@ if sys.version_info < (2,7):
 else:
     import unittest
     
-from adsdata import extractors
-    
+from adsdata import extractors, utils
+base_dir = utils.get_script_path(file_name_space=__file__)
+config_file = os.path.join(base_dir, 'adsdata.cfg.test')
+config = utils.load_config(config_file)
+
+
 class FulltextTestCase(unittest.TestCase):
     
     def test_extractor_factory(self):
@@ -23,17 +27,17 @@ class FulltextTestCase(unittest.TestCase):
             ('2000xxx..999..1234L', '/foo/bar.html,/foo/baz.html', 'Foo', extractors.HtmlExtractor)
             ]
         for bib, path, prov, cls in test_input:
-            ext = extractors.Extractor.factory(bib, path, prov)
+            ext = extractors.Extractor.factory(bib, path, prov, config)
             self.assertTrue(isinstance(ext, cls))
             
         self.assertRaises(
             extractors.UnknownSourceTypeException, 
             extractors.Extractor.factory,
-            '2000xxx..999..1234L', '/foo/bar/baz.doc', 'Foo'
+            '2000xxx..999..1234L', '/foo/bar/baz.doc', 'Foo', config
             )
         
     def test_extrator_const(self):
-        ext = extractors.XMLExtractor('2000xxx..999..1234L', '/foo/bar.xml', 'Foo')
+        ext = extractors.XMLExtractor('2000xxx..999..1234L', '/foo/bar.xml', 'Foo', config)
         self.assertTrue(ext.extract_dir.endswith('/20/00/xx/x,/,9/99/,,/12/34/L/'))
         
         

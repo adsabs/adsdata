@@ -6,6 +6,7 @@
 *ipynb*
 logs/
 adsdata.cfg
+adsdata.cfg.bk
 local_config.py
 test/demo_collections/*.tsv
 *.pyc
@@ -15,3 +16,4 @@ build_metrics_data.py.20*
 
 .vagrant
 *.sublime*
+rabbotmq-docker
