@@ -40,6 +40,18 @@ class FulltextTestCase(unittest.TestCase):
         ext = extractors.XMLExtractor('2000xxx..999..1234L', '/foo/bar.xml', 'Foo', config)
         self.assertTrue(ext.extract_dir.endswith('/20/00/xx/x,/,9/99/,,/12/34/L/'))
         
-        
+
+class TestExtraction(unittest.TestCase):
+    
+    def test_xml_extractor_dataset(self):
+        expected_output = [u'11456', u'11457', u'11458', u'11459']
+        xml_file = '{0}{1}'.format(config['FULLTEXT_EXTRACT_TEST'], 'text.xml')
+
+        XMLExtractor = extractors.Extractor.factory('2000xxx.999..1234L', xml_file, 'Foo', config)
+        contents = XMLExtractor.get_contents()
+
+        self.assertEqual(contents['dataset'], expected_output)
+
+
 if __name__ == '__main__':
     unittest.main()
