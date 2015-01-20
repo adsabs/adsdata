@@ -386,20 +386,21 @@ class XMLExtractor(FileBasedExtractor):
 
     def extract_dataset_content(self, root):
 
-        data_ids = []
+        # data_ids = []
         data_refs = []
         for path in ['//named-content[@content-type="dataset"]']:
             log.debug("trying xpath: %s" % path)
             for span in root.xpath(path):
                 try:
                     data_refs.append(span.attrib.get('xlink:href'))
-                    data_ids.append(span.text_content())
+                    # data_ids.append(span.text_content())
                 except KeyError:
-                    data_ids.append(span.text_content())
+                    # data_ids.append(span.text_content())
                     pass
                 except:
                     log.error('Unexpected error')
-        return data_ids
+                    pass
+        return data_refs
 
 
     def get_contents(self):
