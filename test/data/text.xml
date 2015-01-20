@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<people>Foobar</people>
+<incomplete>
+<body>
+	<data>
+		<named-content content-type="dataset" xlink:href="ADS/Sa.CXO#Obs/11456">11456</named-content>
+		<named-content content-type="dataset" xlink:href="ADS/Sa.CXO#Obs/11457">11457</named-content>
+	</data>
+</body>
+<data>
+<named-content content-type="dataset" xlink:href="ADS/Sa.CXO#Obs/11458">11458</named-content>
+</data> 
+<ack>
+	<named-content content-type="dataset" xlink:href="ADS/Sa.CXO#Obs/11459">11459</named-content>
+	<named-content content-type="source" xlink:href="ADS/Sa.CXO#Obs/11459">FAKENAME</named-content>
+</ack>
+

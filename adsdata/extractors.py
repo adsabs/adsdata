@@ -384,6 +384,24 @@ class XMLExtractor(FileBasedExtractor):
                 ack += section.text_content() + "\n"
         return ack
 
+    def extract_dataset_content(self, root):
+
+        data_ids = []
+        data_refs = []
+        for path in ['//named-content[@content-type="dataset"]']:
+            log.debug("trying xpath: %s" % path)
+            for span in root.xpath(path):
+                try:
+                    data_refs.append(span.attrib.get('xlink:href'))
+                    data_ids.append(span.text_content())
+                except KeyError:
+                    data_ids.append(span.text_content())
+                    pass
+                except:
+                    log.error('Unexpected error')
+        return data_ids
+
+
     def get_contents(self):
 
         if not self.source_loaded:
@@ -397,6 +415,9 @@ class XMLExtractor(FileBasedExtractor):
 
         ack = self.extract_ack_content(root)
         contents['acknowledgements'] = utils.text_cleanup(ack)
+
+        dataset = self.extract_dataset_content(root)
+        contents['dataset'] = [utils.text_cleanup(did) for did in dataset]
 
         return contents
 
