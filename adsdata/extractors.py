@@ -399,6 +399,7 @@ class XMLExtractor(FileBasedExtractor):
                     pass
                 except:
                     log.error('Unexpected error')
+                    pass
         return data_refs
 
 
