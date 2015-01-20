@@ -44,14 +44,13 @@ class FulltextTestCase(unittest.TestCase):
 class TestExtraction(unittest.TestCase):
     
     def test_xml_extractor_dataset(self):
-        expected_output = [u'11456', u'11457', u'11458', u'11459']
+        expected_output = [u'ADS/Sa.CXO#Obs/11456', u'ADS/Sa.CXO#Obs/11457', u'ADS/Sa.CXO#Obs/11458', u'ADS/Sa.CXO#Obs/11459']
         xml_file = '{0}{1}'.format(config['FULLTEXT_EXTRACT_TEST'], 'text.xml')
 
         XMLExtractor = extractors.Extractor.factory('2000xxx.999..1234L', xml_file, 'Foo', config)
         contents = XMLExtractor.get_contents()
 
         self.assertEqual(contents['dataset'], expected_output)
-
 
 if __name__ == '__main__':
     unittest.main()
