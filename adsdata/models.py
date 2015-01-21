@@ -171,7 +171,6 @@ class DataFileCollection(DataCollection):
 
         field_names = [get_collection_field_name(x) for x in cls.field_order]
         reader = csv.DictReader(fh, field_names, delimiter="\t", restkey=cls.restkey, restval="")
-        
         cls.insert_records(reader, collection, batch_size)
         
         log.debug("done loading %d records into %s" % (collection.count(), load_collection_name))
@@ -235,7 +234,7 @@ class DataFileCollection(DataCollection):
         for k, v in record.iteritems():
             # assume id's are strings and we don't need to process
             # (_id field is called "load_key" for aggregated collections
-            if k in ['_id','load_key']: 
+            if k in ['_id','load_key']:
                 continue
             if not v: 
                 continue

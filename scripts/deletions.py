@@ -123,7 +123,7 @@ if __name__ == '__main__':
     opts, args = op.parse_args() 
     
     config = utils.load_config()
-    log = utils.init_logging(utils.base_dir(), __file__, opts.verbose, opts.debug)
+    log = utils.init_logging(utils.base_dir(), __file__, None, opts.verbose, opts.debug)
     if opts.debug:
         log.setLevel(logging.DEBUG)
     
