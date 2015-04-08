@@ -86,6 +86,7 @@ def extract(opts):
     
     log.info("Reading input list of bibcodes to be processed")
     items = get_ft_items(opts)
+    print items
     log.info("Read %d records from %s" %(len(items), opts.infile))
 
     # start up our builder threads

@@ -29,12 +29,16 @@ class Builder(Process):
         self.do_metrics = do_metrics
         self.task_queue = task_queue
         self.result_queue = result_queue
-        self.session = utils.get_session(config)
+        self.session = utils.get_session(config, name=self.__repr__())
+        if do_metrics:
+            psql_session_ = psql_session.Session()
+        else:
+            psql_session_ = None
         self.psql = {
-            'session':psql_session.Session(),
-            'payload': [],
-            'payload_size': 100,
-        }
+                'session': psql_session_,
+                'payload': [],
+                'payload_size': 100,
+            }
         self.rabbit = {
             'publish': publish_to_solr,
             'payload': [],
@@ -43,6 +47,7 @@ class Builder(Process):
 
     def run(self):
         log = logging.getLogger()
+
         while True:
             bibcode = self.task_queue.get()
             if bibcode is None:
@@ -183,7 +188,7 @@ if __name__ == "__main__":
     
     op = OptionParser()
     op.set_usage("usage: build_docs.py [options] [%s]" % '|'.join(commands.map.keys()))
-    op.add_option('--do', dest="do", action="append", default=['docs','metrics'])
+    op.add_option('--do', dest="do", action="append", default=['docs', 'metrics'])
     op.add_option('-i', '--infile', dest="infile", action="store")
     op.add_option('-s', '--source_model', dest="source_model", action="store", default="Accno")
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=int(cpu_count() / 2))
@@ -199,7 +204,7 @@ if __name__ == "__main__":
     
     config = utils.load_config()
 
-    log = utils.init_logging(utils.base_dir(), __file__, opts.verbose, opts.debug)
+    log = utils.init_logging(utils.base_dir(), __file__, None, opts.verbose, opts.debug)
     if opts.debug:
         log.setLevel(logging.DEBUG)
 
@@ -220,6 +225,7 @@ if __name__ == "__main__":
             import pycallgraph
             pycallgraph.start_trace()
 
+        print opts
         commands.map[cmd](opts)
 
         if opts.pygraph: 

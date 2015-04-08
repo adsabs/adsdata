@@ -1,12 +1,11 @@
 # Some const. variables
 $path_var = "/usr/bin:/usr/sbin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 $build_packages = ['firefox', 'python', 'python-pip', 'python-dev', 'libpq-dev', 'libxml2-dev', 'libxslt1-dev', 'mongodb-org', 'jython', 'graphviz']
-$pip_requirements = "requirements.txt"
+$pip_requirements = "/vagrant/requirements.txt"
 
 # Latest mongoDB
 exec {'add_repo':
-	 command => 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10 && 
-	 echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list',
+	 command => 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10 && echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | sudo tee /etc/apt/sources.list.d/mongodb.list',
 	 path => $path_var,
 }
 

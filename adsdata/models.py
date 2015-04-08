@@ -85,7 +85,7 @@ class MetricsDataCollection(DataCollection):
     def add_metrics_data(cls, doc, session, bibcode):
         entry = cls.get_entry(session, bibcode)
         if entry:
-            for field in cls.docs_fields:
+            for field in cls.metrics_fields:
                 key = field.db_field
                 doc[key] = entry.get(key)
 
@@ -96,7 +96,7 @@ class Fulltext(DocsDataCollection):
     ack = fields.StringField(default=None)
     
     config_collection_name = "fulltext"
-    docs_fields = [full,ack]
+    docs_fields = []
     
     def __str__(self):
         return "Fulltext(%s)" % self.bibcode
@@ -171,7 +171,6 @@ class DataFileCollection(DataCollection):
 
         field_names = [get_collection_field_name(x) for x in cls.field_order]
         reader = csv.DictReader(fh, field_names, delimiter="\t", restkey=cls.restkey, restval="")
-        
         cls.insert_records(reader, collection, batch_size)
         
         log.debug("done loading %d records into %s" % (collection.count(), load_collection_name))
@@ -235,7 +234,7 @@ class DataFileCollection(DataCollection):
         for k, v in record.iteritems():
             # assume id's are strings and we don't need to process
             # (_id field is called "load_key" for aggregated collections
-            if k in ['_id','load_key']: 
+            if k in ['_id','load_key']:
                 continue
             if not v: 
                 continue
@@ -440,13 +439,13 @@ class Refereed(DataFileCollection, DocsDataCollection):
     
     config_collection_name = 'refereed'
     field_order = [bibcode]
-    docs_fields = [bibcode]
+    docs_fields = []
     
-    @classmethod
-    def add_docs_data(cls, doc, session, bibcode):
-        entry = cls.get_entry(session, bibcode)
-        if entry:
-            doc['refereed'] = True
+    # @classmethod
+    # def add_docs_data(cls, doc, session, bibcode):
+    #     entry = cls.get_entry(session, bibcode)
+    #     if entry:
+    #         doc['refereed'] = True
                 
     def __str__(self):
         return "Refereed(%s)" % self.bibcode
@@ -460,7 +459,7 @@ class DocMetrics(DataFileCollection, DocsDataCollection):
     
     config_collection_name = 'docmetrics'
     field_order = [bibcode,boost,citation_count,read_count,norm_cites]
-    docs_fields = [boost, citation_count, read_count, norm_cites]
+    docs_fields = [boost, norm_cites]
     
     def __str__(self):
         return "DocMetrics(%s): %s, %s, %s" % (self.bibcode, self.boost, self.citations, self.reads)
@@ -528,7 +527,8 @@ class Reads(DataFileCollection, DocsDataCollection, MetricsDataCollection):
 
     config_collection_name = 'reads'
     field_order = [bibcode]
-    docs_fields = [reads]
+    docs_fields = []
+    metrics_fields = [reads]
 
     def __str__(self):
         return "Reads(%s)" % self.bibcode
@@ -542,7 +542,8 @@ class Downloads(DataFileCollection, DocsDataCollection, MetricsDataCollection):
 
     config_collection_name = 'downloads'
     field_order = [bibcode]
-    docs_fields = [downloads]
+    docs_fields = []
+    metrics_fields = [downloads]
 
     def __str__(self):
         return "Downloads(%s)" % self.bibcode
@@ -576,7 +577,8 @@ class Authors(DataFileCollection, MetricsDataCollection):
 
     config_collection_name = 'authors'
     field_order = [bibcode]
-    docs_fields = [authors]
+    docs_fields = []
+    metrics_fields = [authors]
 
     @classmethod
     def add_metrics_data(cls, doc, session, bibcode):

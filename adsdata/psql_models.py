@@ -8,6 +8,18 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy import create_engine
 
+
+# When building metrics, the following collections NEEDS to exist:
+#
+#     1. citations
+#     2. refereed
+#     3. references
+#     4. citations
+#     5. reads
+#     6. downloads
+#     7. authors
+
+
 Base = declarative_base()
 
 class Metrics(Base):

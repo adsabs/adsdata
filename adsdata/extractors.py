@@ -51,7 +51,7 @@ class Extractor():
         self.bibcode = bibcode
         self.ft_source = ft_source
         self.provider = provider      
-        self.extract_dir = config['FULLTEXT_EXTRACT_PATH'] + ptree.id2ptree(bibcode)
+        self.extract_dir = self.config['FULLTEXT_EXTRACT_PATH'] + ptree.id2ptree(bibcode)
         self.meta_path = os.path.join(self.extract_dir, 'meta.json')
         self.source_loaded = False
         self.source_content = None
@@ -309,13 +309,14 @@ class PdfExtractor(FileBasedExtractor):
         if 'RABBITMQ_PDF_QUEUE' in os.environ:
             pdf_queue_name = os.environ['RABBITMQ_PDF_QUEUE']
         else:
-            pdf_queue_name = config['RABBITMQ_PDF_QUEUE']
-        if 'RABBITMQ_EXCHANGE' in config:
-            exchange = config['RABBITMQ_EXCHANGE']
+            pdf_queue_name = self.config['RABBITMQ_PDF_QUEUE']
+        if 'RABBITMQ_EXCHANGE' in self.config:
+            exchange = self.config['RABBITMQ_EXCHANGE']
         else:
             exchange = ''
 
         self.channel = utils.rabbitmq_channel()
+
         res = self.channel.queue_declare(auto_delete=True)
         
         callback_queue = res.method.queue
