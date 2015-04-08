@@ -27,8 +27,9 @@ class DataSession(object):
     directly accessing the internal pymongo client and for querying
     the data collections in models.py
     """
-    def __init__(self, db, uri, create_ok=False, inc_manipulators=True):
-        
+    def __init__(self, db, uri, create_ok=False, inc_manipulators=True, **kwargs):
+
+        self.proc_name = kwargs.get('name')
         self.malchemy = Session.connect(db, host=uri, timezone=pytz.utc)
         self.create_ok = create_ok
         self.db = self.malchemy.db
@@ -64,7 +65,7 @@ class DataSession(object):
     def iterate(self, model):
         q = self.malchemy.query(model)
         return self.malchemy.execute_query(q, self.malchemy)
-    
+
     def get_doc(self, bibcode, manipulate=True):
         spec = {'_id': bibcode}
         return self.docs.find_one(spec, manipulate=manipulate)
@@ -123,7 +124,7 @@ class DataSession(object):
         # NOTE: even for cases where there was no existing doc we need to do an 
         # upsert to avoid race conditions
         collection.update(spec, record, manipulate=True, upsert=True)
-        log.info("Updated %s" % record['_id'])
+        log.info("[%s] Updated %s" % (collection.name, ['_id']))
         return True
 
 class DatetimeInjector(SONManipulator):

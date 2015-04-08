@@ -102,7 +102,7 @@ def get_session(config, **kwargs):
                     db=config['ADSDATA_MONGO_DATABASE'], 
                     user=config['ADSDATA_MONGO_USER'], 
                     passwd=config['ADSDATA_MONGO_PASSWORD'])
-    return DataSession(config['ADSDATA_MONGO_DATABASE'], uri) 
+    return DataSession(config['ADSDATA_MONGO_DATABASE'], uri, **kwargs)  # monkeypath: je, 03/04/2015
 
 def get_document(session, model, **kwargs):
     doc = session.query(model).filter(kwargs).one()

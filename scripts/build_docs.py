@@ -29,7 +29,7 @@ class Builder(Process):
         self.do_metrics = do_metrics
         self.task_queue = task_queue
         self.result_queue = result_queue
-        self.session = utils.get_session(config)
+        self.session = utils.get_session(config, name=self.__repr__())
         if do_metrics:
             psql_session = psql_session.Session()
         else:
@@ -47,6 +47,7 @@ class Builder(Process):
 
     def run(self):
         log = logging.getLogger()
+
         while True:
             bibcode = self.task_queue.get()
             if bibcode is None:

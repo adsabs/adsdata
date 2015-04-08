@@ -3,7 +3,7 @@ pika
 mongobox
 nose
 mock
-pymongo
+pymongo==2.8
 httplib2
 lxml
 ptree
