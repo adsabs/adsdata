@@ -31,11 +31,11 @@ class Builder(Process):
         self.result_queue = result_queue
         self.session = utils.get_session(config, name=self.__repr__())
         if do_metrics:
-            psql_session = psql_session.Session()
+            psql_session_ = psql_session.Session()
         else:
-            psql_session = None
+            psql_session_ = None
         self.psql = {
-                'session': psql_session,
+                'session': psql_session_,
                 'payload': [],
                 'payload_size': 100,
             }
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     
     op = OptionParser()
     op.set_usage("usage: build_docs.py [options] [%s]" % '|'.join(commands.map.keys()))
-    op.add_option('--do', dest="do", action="append", default=[])
+    op.add_option('--do', dest="do", action="append", default=['docs', 'metrics'])
     op.add_option('-i', '--infile', dest="infile", action="store")
     op.add_option('-s', '--source_model', dest="source_model", action="store", default="Accno")
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=int(cpu_count() / 2))

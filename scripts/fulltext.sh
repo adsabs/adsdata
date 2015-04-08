@@ -27,5 +27,5 @@ python $BASEPATH/scripts/extract_fulltext.py "$@" -i "$ADS_ABSCONFIG/links/fullt
 #echo "#############" `date` ": stopping pdf extraction workers ###################"
 #supervisorctl stop adsdata-pdf-extract
 
-/proj/ads/soft/bin/rmlock -d $SCRIPTPATH .adsdata.lock $$
+/proj/ads/soft/bin/rmlock -d $SCRIPTPATH .fulltext.lock $$
 
