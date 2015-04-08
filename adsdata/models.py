@@ -295,52 +295,56 @@ class DataFileCollection(DataCollection):
                     raise
         
         prev_collection.drop()
-    
-class Bibstem(DataFileCollection):
-    bibstem = fields.StringField()
-    type_code = fields.EnumField(fields.StringField(), "R", "J", "C")
-    journal_name = fields.StringField()
-    
-    config_collection_name = 'bibstems'
-    field_order = [bibstem,type_code,journal_name]
-    
-    def __str__(self):
-        return "Bibstem(%s): %s (%s)" % (self.bibstem, self.journal_name, self.type_code)
 
-class BibstemRanked(DataFileCollection):
-    weight = fields.IntField(default=1)
-    value = fields.StringField()
-    label = fields.StringField()
-    
-    config_collection_name = 'bibstems_ranked'
-    field_order = [weight,value,label]
-    
-    def __str__(self):
-        return "BibstemRanked(%s): %s (%s)" % (self.value, self.label, self.weight)
-    
-    @classmethod
-    def post_load_data(cls, session, source_collection, *args, **kwargs):
-        """
-        conctatenate the label and value fields like so that 
-        label = "label (value)"
-        """
-        log.debug("munging ranked bibstem labels")
-        for d in source_collection.find(snapshot=True):
-            d['label'] = "%s (%s)" % (d.get('label'), d.get('value'))
-            source_collection.save(d)
-        super(BibstemRanked, cls).post_load_data(session, source_collection, *args, **kwargs) 
-    
-class FulltextLink(DataFileCollection):
-    bibcode = fields.StringField(_id=True)
-    fulltext_source = fields.StringField()
-    database = fields.StringField(default="")
-    provider = fields.StringField(default="")
-    
-    config_collection_name = 'fulltext_links'
-    field_order = [bibcode,fulltext_source,database,provider]
-    
-    def __str__(self):
-        return "FulltextLink(%s): %s" % (self.bibcode, self.fulltext_source)
+#  DEPRECATED: ISSUE #44
+# class Bibstem(DataFileCollection):
+#     bibstem = fields.StringField()
+#     type_code = fields.EnumField(fields.StringField(), "R", "J", "C")
+#     journal_name = fields.StringField()
+#
+#     config_collection_name = 'bibstems'
+#     field_order = [bibstem,type_code,journal_name]
+#
+#     def __str__(self):
+#         return "Bibstem(%s): %s (%s)" % (self.bibstem, self.journal_name, self.type_code)
+
+#  DEPRECATED: ISSUE #44
+# class BibstemRanked(DataFileCollection):
+#     weight = fields.IntField(default=1)
+#     value = fields.StringField()
+#     label = fields.StringField()
+#
+#     config_collection_name = 'bibstems_ranked'
+#     field_order = [weight,value,label]
+#
+#     def __str__(self):
+#         return "BibstemRanked(%s): %s (%s)" % (self.value, self.label, self.weight)
+#
+#     @classmethod
+#     def post_load_data(cls, session, source_collection, *args, **kwargs):
+#         """
+#         conctatenate the label and value fields like so that
+#         label = "label (value)"
+#         """
+#         log.debug("munging ranked bibstem labels")
+#         for d in source_collection.find(snapshot=True):
+#             d['label'] = "%s (%s)" % (d.get('label'), d.get('value'))
+#             source_collection.save(d)
+#         super(BibstemRanked, cls).post_load_data(session, source_collection, *args, **kwargs)
+
+
+#  DEPRECATED: ISSUE #44
+# class FulltextLink(DataFileCollection):
+#     bibcode = fields.StringField(_id=True)
+#     fulltext_source = fields.StringField()
+#     database = fields.StringField(default="")
+#     provider = fields.StringField(default="")
+#
+#     config_collection_name = 'fulltext_links'
+#     field_order = [bibcode,fulltext_source,database,provider]
+#
+#     def __str__(self):
+#         return "FulltextLink(%s): %s" % (self.bibcode, self.fulltext_source)
 
 class Readers(DataFileCollection, DocsDataCollection):
     
@@ -485,38 +489,42 @@ class SimbadObjects(DataFileCollection, DocsDataCollection):
         return "Simbad_objs(%s): %s, %s" % (self.bibcode, self.type, self.id)
 
 
-class Accno(DataFileCollection):
+#  DEPRECATED: ISSUE #44
+# class Accno(DataFileCollection):
+#
+#     bibcode = fields.StringField(_id=True)
+#     accno = fields.StringField()
+#
+#     config_collection_name = 'accnos'
+#     field_order = [bibcode,accno]
+#
+#     def __str__(self):
+#         return "Accno(%s): %s" % (self.bibcode, self.accno)
+#
 
-    bibcode = fields.StringField(_id=True)
-    accno = fields.StringField()
+#  DEPRECATED: ISSUE #44
+# class EprintMatches(DataFileCollection):
+#
+#     ecode = fields.StringField(_id=True)
+#     bibcode = fields.StringField()
+#
+#     config_collection_name = 'eprint_matches'
+#     field_order = [ecode,bibcode]
+#
+#     def __str__(self):
+#         return "EprintMatches(%s): %s" % (self.ecode, self.bibcode)
 
-    config_collection_name = 'accnos'
-    field_order = [bibcode,accno]
-
-    def __str__(self):
-        return "Accno(%s): %s" % (self.bibcode, self.accno)
-    
-class EprintMatches(DataFileCollection):
-
-    ecode = fields.StringField(_id=True)
-    bibcode = fields.StringField()
-
-    config_collection_name = 'eprint_matches'
-    field_order = [ecode,bibcode]
-
-    def __str__(self):
-        return "EprintMatches(%s): %s" % (self.ecode, self.bibcode)
-
-class EprintMapping(DataFileCollection):
-
-    arxivid = fields.StringField(_id=True)
-    bibcode = fields.StringField()
-
-    config_collection_name = 'eprint_mapping'
-    field_order = [bibcode,arxivid]
-
-    def __str__(self):
-        return "EprintMapping(%s): %s" % (self.arxivid, self.bibcode)
+#  DEPRECATED: ISSUE #44
+# class EprintMapping(DataFileCollection):
+#
+#     arxivid = fields.StringField(_id=True)
+#     bibcode = fields.StringField()
+#
+#     config_collection_name = 'eprint_mapping'
+#     field_order = [bibcode,arxivid]
+#
+#     def __str__(self):
+#         return "EprintMapping(%s): %s" % (self.arxivid, self.bibcode)
 
 class Reads(DataFileCollection, DocsDataCollection, MetricsDataCollection):
 
