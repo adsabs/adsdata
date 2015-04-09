@@ -489,17 +489,28 @@ class SimbadObjects(DataFileCollection, DocsDataCollection):
         return "Simbad_objs(%s): %s, %s" % (self.bibcode, self.type, self.id)
 
 
-class Accno(DataFileCollection):
+class Canonical(DataFileCollection):
 
     bibcode = fields.StringField(_id=True)
-    accno = fields.StringField()
 
-    config_collection_name = 'accnos'
-    field_order = [bibcode,accno]
+    config_collection_name = 'canonical'
+    field_order = [bibcode]
 
     def __str__(self):
-        return "Accno(%s): %s" % (self.bibcode, self.accno)
+        return "Canonical bibcode: %s" % (self.bibcode)
 
+
+#  DEPRECATED: ISSUE #44
+# class Accno(DataFileCollection):
+#
+#     bibcode = fields.StringField(_id=True)
+#     accno = fields.StringField()
+#
+#     config_collection_name = 'accnos'
+#     field_order = [bibcode,accno]
+#
+#     def __str__(self):
+#         return "Accno(%s): %s" % (self.bibcode, self.accno)
 
 #  DEPRECATED: ISSUE #44
 # class EprintMatches(DataFileCollection):

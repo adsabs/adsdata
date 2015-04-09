@@ -190,7 +190,7 @@ if __name__ == "__main__":
     op.set_usage("usage: build_docs.py [options] [%s]" % '|'.join(commands.map.keys()))
     op.add_option('--do', dest="do", action="append", default=['docs', 'metrics'])
     op.add_option('-i', '--infile', dest="infile", action="store")
-    op.add_option('-s', '--source_model', dest="source_model", action="store", default="Accno")
+    op.add_option('-s', '--source_model', dest="source_model", action="store", default="Canonical")
     op.add_option('-t','--threads', dest="threads", action="store", type=int, default=int(cpu_count() / 2))
     op.add_option('-l','--limit', dest="limit", action="store", type=int)
     op.add_option('-r','--remove', dest="remove", action="store_true", default=False)
