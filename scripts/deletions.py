@@ -111,7 +111,7 @@ if __name__ == '__main__':
     
     op = OptionParser()
     op.set_usage("usage: deletions.py [options] [%s]" % '|'.join(commands.map.keys()))
-    op.add_option('-a', '--authority', dest="authority", action="store", default=models.Accno.config_collection_name,
+    op.add_option('-a', '--authority', dest="authority", action="store", default=models.Canonical.config_collection_name,
                   help="collection to use as the authority")
     op.add_option('-s', '--subject', dest="subject", action="store", default='docs',
                   help="collection to be examined for possible deletions")
