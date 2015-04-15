@@ -25,7 +25,7 @@ Base = declarative_base()
 class Metrics(Base):
   __tablename__='metrics'
 
-  id = Column(Integer,primary_key=True)
+  id = Column(String,primary_key=True)
   bibcode = Column(String,nullable=False,index=True,unique=True)
   refereed = Column(Boolean)
   rn_citations = Column(postgresql.REAL)
