@@ -99,7 +99,7 @@ class Builder(Process):
 
 def publish_to_rabbitmq(payload,exchange='MergerPipelineExchange',route='SolrUpdateRoute'):
   import pika, json
-  url='amqp://admin:password@localhost:5672/%2F'
+  url='amqp://admin:password@localhost:5672/ADSimportpipeline'
   connection = pika.BlockingConnection(pika.URLParameters(url))
   channel = connection.channel()
   channel.basic_publish(exchange,route,json.dumps(payload))
