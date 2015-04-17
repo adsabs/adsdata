@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/adsabs/adsdata.svg?branch=master)](https://travis-ci.org/adsabs/adsdata)
+[![Coverage Status](https://coveralls.io/repos/adsabs/adsdata/badge.svg)](https://coveralls.io/r/adsabs/adsdata)
+
 adsdata
 =======
 
