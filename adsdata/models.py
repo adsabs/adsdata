@@ -415,13 +415,20 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
             doc['reference_num'] = len(res.get('references',[]))
         except:
             doc['reference_num'] = 0
+        author_collection = session.get_collection('authors')
+        res = author_collection.find_one({'_id':bibcode})
+        try:
+            doc['author_num'] = max(len(res.get('authors',[])),1)
+        except:
+            doc['author_num'] = 1
+        auth_norm = 1.0 / float(doc['author_num'])
         for citation in citations:
             try:
                 res = reference_collection.find_one({'_id':citation})
                 Nrefs = len(res.get('references',[]))
                 Nrefs_normalized = 1.0/float(max(5, Nrefs))
                 ref_norm += Nrefs_normalized
-                rn_citation_data.append({'bibcode':citation,'ref_norm':Nrefs_normalized})
+                rn_citation_data.append({'bibcode':citation,'ref_norm':Nrefs_normalized,'auth_norm':auth_norm})
             except:
                 pass
         doc['refereed'] = refereed
@@ -588,7 +595,7 @@ class Grants(DataFileCollection, DocsDataCollection):
     def __str__(self):
         return "Grants(%s): %s, %s" % (self.bibcode, self.agency, self.grant)
 
-class Authors(DataFileCollection, MetricsDataCollection):
+class Authors(DataFileCollection):
 
     bibcode = fields.StringField(_id=True)
     authors = fields.ListField(fields.StringField())
@@ -598,16 +605,6 @@ class Authors(DataFileCollection, MetricsDataCollection):
     config_collection_name = 'authors'
     field_order = [bibcode]
     docs_fields = []
-    metrics_fields = [authors]
-
-    @classmethod
-    def add_metrics_data(cls, doc, session, bibcode):
-        entry = cls.get_entry(session, bibcode)
-        try:
-            authors = entry.get('authors',[])
-        except:
-            authors = []
-        doc['author_num'] = max(len(authors),1)
 
     def __str__(self):
         return "Authors(%s)" % self.bibcode
