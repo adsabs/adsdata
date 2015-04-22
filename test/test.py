@@ -438,7 +438,7 @@ class TestMetrics(AdsdataTestCase):
         self.assertEqual(doc, {'_id': '1920ApJ....51....4D',
                                'refereed': True,
                                'rn_citations': 0.270302403721891962,
-                               'rn_citation_data': [{'bibcode':u'1983ARA&A..21..373O','ref_norm':0.018867924528301886}, {'bibcode':u'2000JOptB...2..534W', 'ref_norm': 0.018867924528301886}, {'bibcode':u'2000PhRvL..84.2094A', 'ref_norm': 0.013698630136986301}, {'bibcode':u'2001AJ....122..308G','ref_norm': 0.018867924528301886}, {'bibcode': u'2011foobar........X', 'ref_norm': 0.2}],
+                               'rn_citation_data': [{'bibcode':u'1983ARA&A..21..373O','ref_norm':0.018867924528301886, 'auth_norm':1.0}, {'bibcode':u'2000JOptB...2..534W', 'ref_norm': 0.018867924528301886, 'auth_norm':1.0}, {'bibcode':u'2000PhRvL..84.2094A', 'ref_norm': 0.013698630136986301, 'auth_norm':1.0}, {'bibcode':u'2001AJ....122..308G','ref_norm': 0.018867924528301886, 'auth_norm':1.0}, {'bibcode': u'2011foobar........X', 'ref_norm': 0.2, 'auth_norm':1.0}],
                                'downloads': [0, 0, 0, 5, 3, 3, 2, 6, 1, 8, 7, 2, 7, 3, 2, 0, 4, 5],
                                'reads': [0, 0, 0, 5, 4, 3, 3, 6, 1, 8, 12, 4, 7, 3, 2, 2, 8, 0],
                                'an_citations': 5.0/age, #0.052631578947368418,
