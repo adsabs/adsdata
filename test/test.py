@@ -449,6 +449,9 @@ class TestMetrics(AdsdataTestCase):
                                'refereed_citations': [u'1983ARA&A..21..373O', u'2000JOptB...2..534W', u'2000PhRvL..84.2094A', u'2001AJ....122..308G'],
                                'author_num': 1,
                                'an_refereed_citations': 4.0/age, #0.042105263157894736,
+                               'rn_citations_hist': {u'1983': 0.018867924528301886,
+                                                     u'2000': 0.089170328250193845,
+                                                     u'2001': 0.070302403721891962}
                                })
     def test_build_metrics_data(self):
         load_data(self.config)

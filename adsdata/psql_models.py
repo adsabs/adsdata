@@ -30,6 +30,7 @@ class Metrics(Base):
   refereed = Column(Boolean)
   rn_citations = Column(postgresql.REAL)
   rn_citation_data = Column(postgresql.JSON)
+  rn_citations_hist = Column(postgresql.JSON)
   downloads = Column(postgresql.ARRAY(Integer))
   reads = Column(postgresql.ARRAY(Integer))
   an_citations = Column(postgresql.REAL)
