@@ -409,6 +409,7 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
             refereed = True
         reference_collection = session.get_collection('references')
         ref_norm = 0.0
+        rn_citations_hist = defaultdict(float)
         rn_citation_data = []
         res = reference_collection.find_one({'_id':bibcode})
         try:
@@ -428,6 +429,7 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
                 Nrefs = len(res.get('references',[]))
                 Nrefs_normalized = 1.0/float(max(5, Nrefs))
                 ref_norm += Nrefs_normalized
+                rn_citations_hist[citation[:4]] += ref_norm
                 rn_citation_data.append({'bibcode':citation,'ref_norm':Nrefs_normalized,'auth_norm':auth_norm})
             except:
                 pass
@@ -440,6 +442,7 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
         doc['an_refereed_citations'] = float(doc['refereed_citation_num'])/float(age)
         doc['rn_citations'] = ref_norm
         doc['rn_citation_data'] = rn_citation_data
+        doc['rn_citations_hist']=dict(rn_citations_hist)
 
     @classmethod
     def post_load_data(cls, session, source_collection):
