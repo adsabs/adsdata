@@ -430,7 +430,7 @@ class Citations(DataFileCollection, DocsDataCollection, MetricsDataCollection):
                 Nrefs_normalized = 1.0/float(max(5, Nrefs))
                 ref_norm += Nrefs_normalized
                 rn_citations_hist[citation[:4]] += ref_norm
-                rn_citation_data.append({'bibcode':citation,'ref_norm':Nrefs_normalized,'auth_norm':auth_norm})
+                rn_citation_data.append({'bibcode':citation,'ref_norm':Nrefs_normalized,'auth_norm':auth_norm, 'pubyear': int(bibcode[:4]), 'cityear': int(citation[:4])})
             except:
                 pass
         doc['refereed'] = refereed
