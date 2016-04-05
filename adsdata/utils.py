@@ -191,6 +191,7 @@ def map_reduce_dictify(session, source, target_collection_name, group_key, value
     by unique key
     """
     from jinja2 import Template
+    from pymongo.errors import OperationFailure
     if not output_key:
         output_key = target_collection_name
     
@@ -210,15 +211,19 @@ def map_reduce_dictify(session, source, target_collection_name, group_key, value
             return ret;
         };
     """).render(output_key=output_key)
+   
+    # Try/Except is a monkey patch: JE 13/08/2015
+    try: 
+        log.info("running map-reduce on %s" % source.name)
+        source.map_reduce(map_func, reduce_func, target_collection_name)
     
-    log.info("running map-reduce on %s" % source.name)
-    source.map_reduce(map_func, reduce_func, target_collection_name)
-    
-    target = session.get_collection(target_collection_name)
-    log.info("cleaning up target collection: %s" % target_collection_name)
-    target.update({}, {'$rename': {('value.' + output_key) : output_key}}, multi=True)
-    target.update({}, {'$unset': { 'value': 1 }}, multi=True)
-    source.drop()
+        target = session.get_collection(target_collection_name)
+        log.info("cleaning up target collection: %s" % target_collection_name)
+        target.update({}, {'$rename': {('value.' + output_key) : output_key}}, multi=True)
+        target.update({}, {'$unset': { 'value': 1 }}, multi=True)
+        source.drop()
+    except OperationFailure as error:
+        log.info('Skipping error: {0}'.format(error))
 
 def mod_time(file):
     """stat a file to get last mod time

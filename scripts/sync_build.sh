@@ -19,7 +19,7 @@ echo "#############" `date` ": synching data sources #################"
 python $BASEPATH/scripts/sync_mongo_data.py "$@" sync
 
 echo "#############" `date` ": building docs collection ###################"
-python $BASEPATH/scripts/build_docs.py "$@" build -t 3
+python $BASEPATH/scripts/build_docs.py "$@" build -t 3 -i /proj/ads/abstracts/config/bibcodes.list.can
 
 echo "#############" `date` ": processing deletions ###################"
 python $BASEPATH/scripts/deletions.py "$@" delete

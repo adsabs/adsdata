@@ -87,7 +87,7 @@ class Builder(Process):
                     try:
                         publish_to_rabbitmq(self.rabbit['payload'])
                     except Exception, e:
-                        log.error("Publish to rabbitmq failed: %s, %s" % (e,payload))
+                        log.error("Publish to rabbitmq failed: %s, %s, %s" % (e, self.rabbit['payload'], traceback.format_exc()))
                     self.rabbit['payload'] = []
             except:
                 log.error("Something went wrong building %s", bibcode)
