@@ -72,9 +72,11 @@ class Builder(Process):
 
                 if self.do_metrics:
                     metrics = self.session.generate_metrics_data(bibcode)
-                    metrics_updated = self.session.store(metrics, self.session.metrics_data)
-                    if metrics_updated:
-                      self.psql['payload'].append(metrics)
+                    # We are no longer using the MongoDB collection
+                    #metrics_updated = self.session.store(metrics, self.session.metrics_data)
+                    #if metrics_updated:
+                    # The Postgres update checks if the record changed
+                    self.psql['payload'].append(metrics)
              
                 if len(self.psql['payload']) >= self.psql['payload_size']:
                     try:
