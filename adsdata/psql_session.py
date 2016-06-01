@@ -60,7 +60,7 @@ class Session:
         excluded_fields = ['modtime']
         if dict((k,current.__getattribute__(k)) for k in record if k not in excluded_fields)==dict((k,v) for k,v in record.iteritems() if k not in excluded_fields):
           #Record is the same as the current one: no-op
-          return
+          continue
         for k,v in record.iteritems():
           current.__setattr__(k,v)
       except NoResultFound:
