@@ -22,6 +22,9 @@ from stat import ST_MTIME
 import logging
 log = logging.getLogger()
 redis_log = None
+# limit map-reduce to catenate these many elements
+# (this avoids MongoDB's 10K limit and avoids generating huge docs)
+max_array_length = 100000
         
 def init_logging(base_dir, calling_script, logfile=None, verbose=False, debug=False):
 
@@ -171,7 +174,8 @@ def map_reduce_listify(session, source, target_collection_name, group_key, value
 
     reduce_func = Code("function( key , values ){ " \
                 + "var ret = { '%s': [] }; " % value_field \
-                + "for ( var i = 0; i < values.length; i++ ) " \
+                + "var len = Math.min(values.length, %d); " % max_array_length \
+                + "for ( var i = 0; i < len; i++ ) " \
                     + "ret['%s'].push.apply(ret['%s'],values[i]['%s']); " % (value_field, value_field, value_field) \
                 + " return ret;" \
             + "};")
@@ -205,12 +209,13 @@ def map_reduce_dictify(session, source, target_collection_name, group_key, value
     reduce_func = Template("""
         function(key, values) {
             var ret = { '{{ output_key }}': [] };
-            for ( var i = 0; i < values.length; i++ ) {
+            var len = Math.min(values.length, %d); 
+            for ( var i = 0; i < len; i++ ) {
                 ret['{{ output_key }}'].push.apply(ret['{{ output_key }}'], values[i]['{{ output_key }}']);
             }
             return ret;
         };
-    """).render(output_key=output_key)
+    """ % max_array_length).render(output_key=output_key)
    
     # Try/Except is a monkey patch: JE 13/08/2015
     try: 
