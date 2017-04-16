@@ -48,6 +48,7 @@ class Session:
     #                                }  
     for record in records:
       record['bibcode'] = record['_id']
+      record['id'] = record['_id']
 
       deletions = ['_id','_digest','_dt']
       for k in deletions:
